@@ -224,6 +224,9 @@ dialog::backdrop{background:rgba(8,18,17,.6)}
 const cvs=document.getElementById('pond'),ctx=cvs.getContext('2d');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const hasFilter='filter' in ctx;
+// Phones: a live canvas blur every frame tanks the frame rate, so blur shadows by upscaling a quarter-size canvas instead.
+const lite=matchMedia('(pointer: coarse)').matches;
+const shadow=document.createElement('canvas'),sctx=shadow.getContext('2d');
 const rnd=(a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
 let W=0,H=0,DPR=1,SC=1;
 const floor=document.createElement('canvas'),fctx=floor.getContext('2d');
@@ -317,10 +320,10 @@ class Koi{
     let target=null,best=1e9;
     for(const p of pellets){const d=Math.hypot(p.x-this.x,p.y-this.y);if(d<best&&d<480*SC){best=d;target=p}}
     let desired,steer;
-    if(target){desired=Math.atan2(target.y-this.y,target.x-this.x);this.speed=Math.min(this.speed+.02,1.5);steer=.06;if(best<this.len*.08)target.eaten=true}
+    if(target){desired=Math.atan2(target.y-this.y,target.x-this.x);this.speed=Math.min(this.speed+.02*dt/16,1.5);steer=.06;if(best<this.len*.08)target.eaten=true}
     else{
       desired=this.a+(Math.sin(this.t*.29+this.sd)*.6+Math.sin(this.t*.11+this.sd*1.7)*.4)*.5;steer=.012;
-      this.speed+=(this.base-this.speed)*.01;
+      this.speed+=(this.base-this.speed)*Math.min(1,.01*dt/16);
       const pad=Math.min(W,H)*.04;
       if(!this.goal&&(this.x<pad||this.x>W-pad||this.y<pad||this.y>H-pad))this.goal={x:rnd(.2,.8)*W,y:rnd(.2,.8)*H};
       if(this.goal){desired=Math.atan2(this.goal.y-this.y,this.goal.x-this.x);steer=.028;
@@ -328,7 +331,8 @@ class Koi{
     }
     if(this.flee>0){this.flee-=dt;desired=this.fleeA;steer=.07}
     const da=((desired-this.a+Math.PI*3)%(Math.PI*2))-Math.PI;this.a+=clamp(da*steer,-.035,.035)*dt/16;
-    const sp=this.speed*dt*.06*SC*(reduce?.5:1);
+    // Scale by body length, not screen size, so koi cover the same body-lengths per second on every device.
+    const sp=this.speed*dt*.06*(this.len/230)*(reduce?.5:1);
     this.x+=Math.cos(this.a)*sp;this.y+=Math.sin(this.a)*sp;
     const s=this.seg;s[0].x=this.x;s[0].y=this.y;
     this.ph+=dt*.001*(1.6+this.speed*1.6)*(reduce?.4:1);
@@ -364,7 +368,7 @@ class Koi{
     const flap=Math.sin(this.t*1.6+side*1.3)*.08*(reduce?.3:1),r=o.a+side*(Math.PI/2+spread+flap),p=new Path2D(),c=Math.cos(r),sn=Math.sin(r),tr=(x,y)=>[base.x+x*c-y*sn,base.y+x*sn+y*c];
     const k=side;p.moveTo(...tr(0,-F*.12*k));p.bezierCurveTo(...tr(F*.45,-F*.42*k),...tr(F*1.05,-F*.2*k),...tr(F,F*.08*k));p.bezierCurveTo(...tr(F*.85,F*.3*k),...tr(F*.3,F*.25*k),...tr(0,F*.12*k));p.closePath();return p}
   blob(x,y,a,r,st,seed){const p=new Path2D();for(let k=0;k<=14;k++){const an=k/14*Math.PI*2,rr=r*(.72+.22*Math.sin(seed+k*1.9)+.14*Math.sin(seed*1.7+k*4.3));const lx=Math.cos(an)*rr*st,ly=Math.sin(an)*rr;const px=x+lx*Math.cos(a)-ly*Math.sin(a),py=y+lx*Math.sin(a)+ly*Math.cos(a);k?p.lineTo(px,py):p.moveTo(px,py)}p.closePath();return p}
-  drawShadow(){const g=this._g=this.geom(),o=this.len*.09;ctx.save();ctx.translate(o*.8,o);ctx.fill(g.path);ctx.fill(this.tail());ctx.restore()}
+  drawShadow(c=ctx){const g=this._g=this.geom(),o=this.len*.09;c.save();c.translate(o*.8,o);c.fill(g.path);c.fill(this.tail());c.restore()}
   draw(){
     const g=this._g,v=this.v,W0=this.w(.28);
     ctx.save();ctx.globalAlpha=this.depth;
@@ -432,7 +436,7 @@ const flies=Array.from({length:22},()=>({x:rnd(0,1),y:rnd(0,1),p:rnd(0,100)}));
 let last=performance.now();
 function frame(now){requestAnimationFrame(frame);try{draw(now)}catch(e){console.error(e)}}
 function draw(now){
-  const dt=Math.min(now-last,50);last=now;
+  const dt=Math.min(now-last,100);last=now;
   ctx.drawImage(floor,0,0,W,H);
   // slow light shimmer
   if(!reduce&&S.settings.shimmer){ctx.globalCompositeOperation='lighter';for(let i=0;i<3;i++){const x=(Math.sin(now*.00007*(i+1)+i*2)*.4+.5)*W,y=(Math.cos(now*.00006*(i+2)+i)*.4+.45)*H,r=Math.max(W,H)*.25;
@@ -444,8 +448,10 @@ function draw(now){
   // food
   for(let i=pellets.length-1;i>=0;i--){const p=pellets[i];p.life-=dt;if(p.eaten||p.life<0){if(p.eaten)ripple(p.x,p.y,.5);pellets.splice(i,1);continue}ctx.fillStyle='#b88a4a';ctx.beginPath();ctx.arc(p.x,p.y,3*SC,0,7);ctx.fill()}
   // koi: shadows first, then bodies
-  for(const k of fish)k.update(dt);
-  if(hasFilter)ctx.filter=`blur(${Math.round(7*SC)}px)`;ctx.fillStyle='rgba(3,14,13,.32)';for(const k of fish)k.drawShadow();ctx.filter='none';
+  const steps=Math.ceil(dt/20);for(const k of fish)for(let i=0;i<steps;i++)k.update(dt/steps);
+  if(lite){sctx.setTransform(1,0,0,1,0,0);sctx.clearRect(0,0,shadow.width,shadow.height);sctx.setTransform(shadow.width/W,0,0,shadow.height/H,0,0);
+    sctx.fillStyle='rgba(3,14,13,.32)';for(const k of fish)k.drawShadow(sctx);ctx.drawImage(shadow,0,0,W,H)}
+  else{if(hasFilter)ctx.filter=`blur(${Math.round(7*SC)}px)`;ctx.fillStyle='rgba(3,14,13,.32)';for(const k of fish)k.drawShadow();ctx.filter='none'}
   for(const k of fish)k.draw();
   // water haze over the fish
   ctx.fillStyle='rgba(28,62,57,.22)';ctx.fillRect(0,0,W,H);
@@ -464,7 +470,8 @@ function draw(now){
 
 /* ---------- layout ---------- */
 let rt;
-function resize(first){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;SC=clamp(Math.min(W,H)/800,.55,1.3);cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+function resize(first){DPR=Math.min(devicePixelRatio||1,lite?1.5:2);W=innerWidth;H=innerHeight;SC=clamp(Math.min(W,H)/800,.55,1.3);cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  shadow.width=Math.ceil(W/4);shadow.height=Math.ceil(H/4);
   buildFloor();makePads();if(first)spawnFish();else for(const k of fish){k.x=clamp(k.x,0,W);k.y=clamp(k.y,0,H)}}
 addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>resize(false),150)});
 
