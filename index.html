@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Still Water — a koi pond for a quiet minute</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --deep:#13292a; --paper:#f1ede2; --ink:#1a2422; --koi:#d9673a; --gold:#e3b44c;
+  --glass:rgba(16,36,35,.55); --glass-line:rgba(241,237,226,.22);
+  --panel:rgba(241,237,226,.97); --panel-ink:#1a2422; --muted:#5d6b66; --line:rgba(26,36,34,.14);
+  --serif:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",Georgia,serif;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--panel:rgba(20,36,35,.97);--panel-ink:#efe9dc;--muted:#a3b3ad;--line:rgba(239,233,220,.16);}}
+:root[data-theme="dark"]{--panel:rgba(20,36,35,.97);--panel-ink:#efe9dc;--muted:#a3b3ad;--line:rgba(239,233,220,.16);}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--deep);font-family:var(--sans);color:var(--paper)}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:.55rem 1rem;background:transparent;color:inherit}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.title{position:fixed;max-width:calc(100% - 130px);left:clamp(18px,3vw,36px);top:calc(env(safe-area-inset-top,0px) + clamp(16px,3vw,32px));pointer-events:none;transition:opacity 2s ease}
+.title h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.4rem,3vw,2rem);margin:0;letter-spacing:.06em;color:rgba(241,237,226,.85)}
+.title p{margin:.3rem 0 0;font-size:.88rem;font-weight:300;color:rgba(241,237,226,.55)}
+.title.gone{opacity:0}
+
+/* timer ring */
+.timer{position:fixed;right:clamp(14px,2.4vw,28px);top:calc(env(safe-area-inset-top,0px) + clamp(14px,2.4vw,28px));width:76px;height:76px;padding:0;display:grid;place-items:center;color:rgba(241,237,226,.8);transition:opacity .6s}
+.timer svg{position:absolute;inset:0}
+.timer span{font-weight:300;font-size:1.15rem;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.hidden-ui .timer{opacity:0}
+.hidden-ui .timer:hover,.hidden-ui .timer:focus-visible{opacity:1}
+
+/* menu */
+.menu-btn{position:fixed;right:clamp(14px,2.4vw,28px);bottom:calc(env(safe-area-inset-bottom,0px) + clamp(14px,2.4vw,28px));width:44px;height:44px;padding:0;display:grid;place-items:center;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.menu-btn i{display:block;width:4px;height:4px;border-radius:50%;background:var(--paper);box-shadow:-8px 0 0 var(--paper),8px 0 0 var(--paper)}
+.menu{position:fixed;right:clamp(14px,2.4vw,28px);bottom:calc(env(safe-area-inset-bottom,0px) + clamp(14px,2.4vw,28px) + 56px);width:min(320px,calc(100vw - 28px));max-height:calc(100% - clamp(14px,2.4vw,28px) - 76px);overflow-y:auto;overscroll-behavior:contain;background:rgba(14,28,30,.86);border:1px solid var(--glass-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:22px;padding:.4rem 1.1rem 1rem;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s,transform .2s;scrollbar-width:thin}
+.menu.open{opacity:1;transform:none;pointer-events:auto}
+.menu section{padding:.9rem 0 .5rem;border-top:1px solid var(--glass-line)}
+.menu h4{margin:0 0 .5rem;font-size:.78rem;font-weight:500;letter-spacing:.14em;color:rgba(241,237,226,.5)}
+.wallet{display:flex;align-items:center;gap:.55rem;padding:.75rem 0 .6rem}
+.wallet b{font-weight:500;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.wallet .get{margin-left:auto}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;padding-bottom:.4rem}
+.act{border:1px solid var(--glass-line);border-radius:12px;padding:.55rem .3rem;font-size:.85rem;color:var(--paper);line-height:1.25}
+.act:hover{background:rgba(241,237,226,.08)}
+.act small{display:block;color:rgba(241,237,226,.5);font-size:.75rem}
+.meta{font-size:.8rem;color:rgba(241,237,226,.5);padding:.25rem 0 .7rem}
+.srow{display:grid;grid-template-columns:4.8rem 1fr auto;align-items:center;gap:.75rem;min-height:40px;font-size:.95rem;color:rgba(241,237,226,.85)}
+.srow.two{grid-template-columns:1fr auto}
+.srow.off .lbl{color:rgba(241,237,226,.45)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:rgba(241,237,226,.22);border-radius:2px}
+input[type=range]::-moz-range-track{height:2px;background:rgba(241,237,226,.22);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#e9eeec;margin-top:-7px;border:0;transition:background .15s}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#e9eeec;border:0}
+input[type=range]:active::-webkit-slider-thumb,input[type=range]:focus-visible::-webkit-slider-thumb{background:#e58a4e}
+input[type=range]:active::-moz-range-thumb,input[type=range]:focus-visible::-moz-range-thumb{background:#e58a4e}
+input[type=range]:focus-visible{outline:none}
+input[type=range]:focus-visible::-webkit-slider-runnable-track{background:rgba(241,237,226,.45)}
+.srow.off input[type=range]{opacity:.45}
+.switch{position:relative;width:46px;height:26px;padding:0;border-radius:999px;background:rgba(241,237,226,.16);flex:none;transition:background .2s}
+.switch::after{content:"";position:absolute;left:4px;top:4px;width:18px;height:18px;border-radius:50%;background:#c9cfcd;transition:transform .2s,background .2s}
+.switch[aria-checked="true"]{background:#8a5a32}
+.switch[aria-checked="true"]::after{transform:translateX(20px);background:#fff}
+.timers{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-top:.2rem}
+.timers button{border:1px solid var(--glass-line);padding:.6rem;color:rgba(241,237,226,.85)}
+.timers button:hover{background:rgba(241,237,226,.08)}
+.timers button[aria-pressed="true"]{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.coin-dot{flex:none;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f7dc8c,var(--gold) 55%,#a87a1f);box-shadow:inset 0 0 0 2px rgba(120,80,10,.35);display:inline-grid;place-items:center}
+.coin-dot::after{content:"";width:6px;height:6px;border:1.5px solid rgba(110,70,10,.55);border-radius:1px}
+.btn-gold{background:var(--gold);color:#2a1d05;font-weight:700;padding:.35rem .8rem;font-size:.9rem}
+
+/* on-screen actions */
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + clamp(14px,2.4vw,28px));display:flex;gap:.3rem;padding:.3rem;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:999px}
+.dock button{display:flex;align-items:center;gap:.45rem;padding:.55rem .95rem;font-size:.93rem;color:var(--paper);white-space:nowrap}
+.dock button:hover{background:rgba(241,237,226,.1)}
+.dock button[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
+.dock .coin-dot{width:16px;height:16px}.dock .coin-dot::after{width:5px;height:5px}
+@media (max-width:560px){.dock{left:clamp(14px,2.4vw,28px);transform:none}.dock button{padding:.55rem .7rem;font-size:.86rem;gap:.35rem}}
+@media (max-width:370px){.dock button svg,.dock button .coin-dot{display:none}}
+/* active-mode pill */
+.pill{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + clamp(14px,2.4vw,28px) + 62px);transform:translate(-50%,12px);display:flex;align-items:center;gap:.7rem;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:999px;padding:.35rem .35rem .35rem 1rem;font-size:.92rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;max-width:calc(100vw - 90px)}
+.pill.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.pill span{overflow:hidden;text-overflow:ellipsis}
+.pill button{background:var(--paper);color:var(--ink);padding:.35rem .9rem;font-weight:500}
+
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 26px);transform:translate(-50%,-8px);background:rgba(241,237,226,.95);color:var(--ink);padding:.6rem 1rem;border-radius:12px;font-size:.92rem;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;max-width:min(90vw,420px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* shop */
+.scrim{position:fixed;inset:0;background:rgba(8,18,17,.45);opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;right:0;top:0;bottom:0;width:min(420px,100%);background:var(--panel);color:var(--panel-ink);transform:translateX(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden}
+.sheet.open{transform:none;visibility:visible}
+.sheet header{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 1.4rem .6rem}
+.sheet h2{font-family:var(--serif);font-weight:700;font-size:1.5rem;margin:0}
+.sheet .bal{display:flex;align-items:center;gap:.4rem;font-weight:500;margin-left:auto;margin-right:.6rem}
+.sheet .close{padding:.4rem .7rem;color:var(--muted);font-size:1.4rem;line-height:1}
+.tabs{display:flex;padding:0 1.4rem;border-bottom:1px solid var(--line)}
+.tabs button{border-radius:0;padding:.7rem .1rem;margin-right:1.2rem;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--panel-ink);border-bottom-color:var(--koi)}
+.sheet-body{overflow-y:auto;padding:.6rem 1.4rem 2rem;flex:1}
+.sheet-body h3{font-family:var(--serif);font-weight:500;font-size:1.05rem;margin:1.2rem 0 .3rem;color:var(--muted)}
+.item{display:grid;grid-template-columns:56px 1fr auto;gap:.9rem;align-items:center;padding:.85rem 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.swatch{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:#244a44}
+.item strong{display:block;font-weight:500}
+.item small{color:var(--muted);font-size:.85rem;line-height:1.45}
+.price{display:flex;align-items:center;gap:.35rem;font-weight:700;white-space:nowrap}
+.item .buy{background:var(--panel-ink);color:var(--panel);padding:.45rem .9rem;font-size:.9rem}
+.item .buy:disabled{opacity:.35;cursor:not-allowed}
+.item small.own{display:block;margin-top:.2rem;color:var(--panel-ink);opacity:.7;font-size:.8rem}
+.koi-actions{display:flex;flex-direction:column;align-items:flex-end;gap:.45rem}
+.koi-actions .buy{min-width:84px;display:flex;justify-content:center}
+.stepper{display:flex;align-items:center;gap:.1rem;border:1px solid var(--line);border-radius:999px;padding:.1rem}
+.stepper button{width:22px;height:22px;padding:0;font-size:.9rem;line-height:1;color:var(--panel-ink)}
+.stepper span{font-size:.82rem}
+.stepper button:hover:not(:disabled){background:var(--line)}
+.stepper button:disabled{opacity:.3;cursor:not-allowed}
+.stepper span{min-width:1.1rem;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.sheet .switch{background:rgba(26,36,34,.18)}
+.sheet .switch[aria-checked="true"]{background:#8a5a32}
+.item .owned{color:var(--muted);font-size:.85rem;padding:.45rem .2rem}
+.pack{display:grid;grid-template-columns:1fr auto;align-items:center;gap:.6rem;padding:1rem;border:1px solid var(--line);border-radius:14px;margin:.7rem 0}
+.pack.best{border:2px solid var(--gold)}
+.pack .amt{font-family:var(--serif);font-size:1.35rem;font-weight:700;display:flex;align-items:center;gap:.45rem}
+.pack small{color:var(--muted);display:block;margin-top:.15rem}
+.note{font-size:.82rem;color:var(--muted);line-height:1.55;margin-top:1rem}
+
+dialog{border:0;border-radius:18px;padding:0;width:min(380px,92vw);background:var(--panel);color:var(--panel-ink)}
+dialog::backdrop{background:rgba(8,18,17,.6)}
+.dlg{padding:1.4rem}
+.dlg h2{font-family:var(--serif);margin:0 0 .3rem;font-size:1.3rem}
+.dlg .row{display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.methods{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:1rem 0}
+.methods label{position:relative;border:1px solid var(--line);border-radius:10px;padding:.6rem .3rem;text-align:center;font-size:.85rem;cursor:pointer}
+.methods input{position:absolute;opacity:0}
+.methods label:has(input:checked){border:2px solid var(--koi);font-weight:700}
+.methods label:has(input:focus-visible){outline:2px solid var(--gold);outline-offset:2px}
+.demo-flag{background:rgba(227,180,76,.18);border-radius:10px;padding:.6rem .8rem;font-size:.82rem;line-height:1.5}
+.dlg-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}
+.dlg-actions .pay{background:var(--koi);color:#fff;font-weight:700}
+@media (prefers-reduced-motion:reduce){.sheet,.toast,.scrim,.menu,.pill{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="pond" aria-label="Animated koi pond. Tap the water to make ripples."></canvas>
+
+<div class="title" id="title"><h1>Still Water</h1><p>Tap the water. Sound starts when you do.</p></div>
+
+<button class="timer" id="timer" title="Time spent at the pond" aria-label="Time spent at the pond">
+  <svg viewBox="0 0 76 76" aria-hidden="true">
+    <circle cx="38" cy="38" r="36" fill="none" stroke="rgba(241,237,226,.18)" stroke-width="1.2"/>
+    <circle id="ring" cx="38" cy="38" r="36" fill="none" stroke="rgba(241,237,226,.75)" stroke-width="1.2" stroke-linecap="round" transform="rotate(-90 38 38)" stroke-dasharray="226.2" stroke-dashoffset="226.2"/>
+  </svg>
+  <span id="clock">0:00</span>
+</button>
+
+<button class="menu-btn" id="menuBtn" aria-label="Open settings" aria-expanded="false" aria-controls="menu"><i></i></button>
+<div class="menu" id="menu" role="dialog" aria-label="Pond settings">
+  <div class="wallet"><span class="coin-dot" aria-hidden="true"></span><b id="coinCount">0</b><span class="sr">coins</span><button class="btn-gold get" data-act="topup">Get coins</button></div>
+  <div class="meta" id="wishes">No coins in the pond yet</div>
+  <section aria-labelledby="h-snd"><h4 id="h-snd">Sounds</h4>
+    <div id="soundRows"></div>
+    <div class="srow two"><span class="lbl">Mute all</span><button class="switch" role="switch" id="muteAll" aria-checked="false" aria-label="Mute all sounds"></button></div>
+  </section>
+  <section aria-labelledby="h-vis"><h4 id="h-vis">Visuals</h4>
+    <div class="srow two"><span class="lbl">Light shimmer</span><button class="switch" role="switch" data-vis="shimmer" aria-label="Light shimmer"></button></div>
+    <div id="setupRows"></div>
+    <div class="srow two"><span class="lbl">Show timer and title</span><button class="switch" role="switch" data-vis="showUi" aria-label="Show timer and title"></button></div>
+  </section>
+  <section aria-labelledby="h-tmr"><h4 id="h-tmr">Timer</h4>
+    <div class="timers"><button data-min="10" aria-pressed="false">10 mins</button><button data-min="15" aria-pressed="false">15 mins</button><button data-min="30" aria-pressed="false">30 mins</button><button data-min="60" aria-pressed="false">60 mins</button></div>
+    <div class="meta" id="timerNote" style="padding-top:.6rem">Counting your time at the pond. Pick a length for a gentle bell when it ends.</div>
+  </section>
+</div>
+
+<nav class="dock" id="dock" aria-label="Pond actions">
+  <button data-dock="throw" aria-pressed="false"><span class="coin-dot" aria-hidden="true"></span>Throw coin</button>
+  <button data-dock="feed" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="5" cy="6" r="2" fill="#c89a5a"/><circle cx="10.5" cy="5" r="1.7" fill="#c89a5a"/><circle cx="8" cy="10.5" r="2" fill="#c89a5a"/></svg>Feed koi</button>
+  <button data-dock="shop"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 5.5h10l-.9 8H3.9z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5.5 5.5V4.5a2.5 2.5 0 0 1 5 0v1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>Shop</button>
+</nav>
+<div class="pill" id="pill" aria-live="polite"><span id="pillText"></span><button id="pillDone">Done</button></div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" aria-label="Shop">
+  <header><h2>Pond shop</h2><span class="bal"><span class="coin-dot" aria-hidden="true"></span><span id="shopBal">0</span></span><button class="close" id="closeShop" aria-label="Close shop">×</button></header>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="items">Spend coins</button>
+    <button role="tab" aria-selected="false" data-tab="coins">Buy coins</button>
+  </div>
+  <div class="sheet-body" id="tab-items"></div>
+  <div class="sheet-body" id="tab-coins" hidden></div>
+</aside>
+
+<dialog id="checkout">
+  <form method="dialog" class="dlg">
+    <h2>Checkout</h2>
+    <div class="row"><span id="ckAmt">100 coins</span><strong id="ckPrice">₱49</strong></div>
+    <div class="methods" role="radiogroup" aria-label="Payment method">
+      <label><input type="radio" name="m" value="GCash" checked><span>GCash</span></label>
+      <label><input type="radio" name="m" value="Maya"><span>Maya</span></label>
+      <label><input type="radio" name="m" value="Card"><span>Card</span></label>
+    </div>
+    <div class="demo-flag">Demo checkout. No money is charged — coins are added straight away so you can test the flow. A real payment provider plugs in here.</div>
+    <div class="dlg-actions"><button value="cancel">Cancel</button><button value="pay" class="pay" id="payBtn">Pay ₱49</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(()=>{
+const cvs=document.getElementById('pond'),ctx=cvs.getContext('2d');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const hasFilter='filter' in ctx;
+const rnd=(a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
+let W=0,H=0,DPR=1,SC=1;
+const floor=document.createElement('canvas'),fctx=floor.getContext('2d');
+
+/* ---------- state ---------- */
+const KEY='stillwater:v2';
+const defaults={coins:20,koi:{kohaku:{owned:4,shown:4},tancho:{owned:2,shown:2}},extras:['blooms'],extrasOff:[],pondCoins:[]};
+const SOUND_LIST=[['music','Music'],['wind','Wind'],['birds','Birds'],['chimes','Chimes'],['crickets','Crickets'],['stream','Stream'],['rain','Rain']];
+const defaultSettings={muted:false,shimmer:true,showUi:true,snd:{music:{on:true,vol:.6},wind:{on:true,vol:.35},birds:{on:true,vol:.3},chimes:{on:false,vol:.35},crickets:{on:false,vol:.3},stream:{on:true,vol:.3},rain:{on:false,vol:.4}}};
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY));if(!S){const old=JSON.parse(localStorage.getItem('stillwater:v1')||'null');S=old?{...defaults,coins:old.coins??20,pondCoins:old.pondCoins||[]}:null}}catch(e){S=null}
+S={...defaults,...(S||{})};
+// migrate older saves (list of active koi) to per-variety counts
+if(S.active&&!(S.koi&&S.koi!==defaults.koi&&Object.keys(S.koi).length)){const k={};for(const v of S.active){k[v]=k[v]||{owned:0,shown:0};k[v].owned=Math.min(5,k[v].owned+1);k[v].shown=k[v].owned}S.koi=k;delete S.active;delete S.owned}
+S.koi=JSON.parse(JSON.stringify(S.koi));S.extrasOff=S.extrasOff||[];
+S.settings={...defaultSettings,...(S.settings||{}),snd:{...defaultSettings.snd,...((S.settings||{}).snd||{})}};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- catalogue ---------- */
+const VARIETIES={
+  kohaku:{name:'Kohaku',desc:'White with red patches. The classic.',base:'#e9e5db',fin:'#e9e5db',price:0,
+    patches:[['#cf4f2c',3,.55,.95,.12,.78]]},
+  tancho:{name:'Tancho',desc:'Pure white with a single red crown.',base:'#ece8df',fin:'#ece8df',price:0,crown:'#cc3a22',
+    patches:[['#cf4f2c',1,.25,.4,.45,.7]]},
+  ogon:{name:'Ogon',desc:'Solid gold with a bright stripe down its back.',base:'#cf9a3c',fin:'#d9a548',price:40,stripe:'rgba(248,218,140,.5)',
+    patches:[['#a8722a',3,.25,.45,.2,.75]]},
+  showa:{name:'Showa',desc:'Ink black with red and white strokes.',base:'#1d2523',fin:'#232c2a',price:60,
+    patches:[['#c9532e',2,.5,.8,.15,.6],['#e6e2d6',3,.35,.6,.1,.8]]},
+  kujaku:{name:'Kujaku',desc:'Dark scales flecked with sky blue and white.',base:'#1f2a2b',fin:'#26302f',price:80,
+    patches:[['#3c8bbb',3,.25,.4,.25,.7],['#e6e2d6',3,.25,.45,.2,.8],['#c98a35',1,.25,.35,.2,.5]]},
+  chagoi:{name:'Chagoi',desc:'Warm tea brown. Calm and friendly.',base:'#8a5c36',fin:'#93653d',price:50,stripe:'rgba(200,150,100,.3)',patches:[]},
+};
+const EXTRAS={
+  blooms:{name:'Lotus flowers',desc:'Pink lotus blooms open on a few lily pads.',price:25,color:'#f2b9c6'},
+  rain:{name:'Soft rain',desc:'Raindrops dimple the surface now and then.',price:40,color:'#9fb8c4'},
+  evening:{name:'Evening',desc:'The pond darkens and fireflies drift over it.',price:60,color:'#e3d27a'},
+};
+const PACKS=[{coins:100,price:49,label:'A handful'},{coins:550,price:249,label:'Includes 50 bonus coins',best:true},{coins:1200,price:499,label:'Includes 200 bonus coins'}];
+const MAX_EACH=5;
+const isOn=k=>S.extras.includes(k)&&!S.extrasOff.includes(k);
+const kc=k=>S.koi[k]||(S.koi[k]={owned:0,shown:0});
+
+/* ---------- pond floor (stone tiles) ---------- */
+function buildFloor(){
+  const fw=Math.ceil(W/2),fh=Math.ceil(H/2);floor.width=fw;floor.height=fh;
+  const img=fctx.createImageData(fw,fh),d=img.data;
+  const cs=Math.max(30,Math.round(46*SC)),gx=Math.ceil(fw/cs)+2,gy=Math.ceil(fh/cs)+2;
+  const P=[];for(let y=0;y<gy;y++){P[y]=[];for(let x=0;x<gx;x++)P[y][x]={x:(x-1+rnd(.12,.88))*cs,y:(y-1+rnd(.12,.88))*cs,s:rnd(-1,1)}}
+  for(let y=0;y<fh;y++){const cy=Math.floor(y/cs)+1;for(let x=0;x<fw;x++){const cx=Math.floor(x/cs)+1;
+    let d1=1e9,d2=1e9,sh=0;
+    for(let j=-1;j<=1;j++){const row=P[cy+j];if(!row)continue;for(let i=-1;i<=1;i++){const p=row[cx+i];if(!p)continue;const dd=(p.x-x)**2+(p.y-y)**2;if(dd<d1){d2=d1;d1=dd;sh=p.s}else if(dd<d2)d2=dd}}
+    const e=Math.sqrt(d2)-Math.sqrt(d1);
+    const line=Math.exp(-(e*e)/1.4)*.75, inner=Math.min(1,e/10);
+    const lx=x/fw,ly=y/fh;
+    let L=1-(.62*lx+.45*ly);L+=.35*Math.exp(-((lx-.08)**2+(ly-.18)**2)/.09);L=clamp(L,0,1.2);
+    let r=lerp(13,50,L),g=lerp(29,92,L),b=lerp(31,80,L);
+    const k=(1+sh*.06)*(.9+inner*.12);r*=k;g*=k;b*=k;
+    r+=line*30;g+=line*48;b+=line*44;
+    const n=(Math.random()-.5)*5;const o=(y*fw+x)*4;d[o]=r+n;d[o+1]=g+n;d[o+2]=b+n;d[o+3]=255}}
+  fctx.putImageData(img,0,0);
+  // soft boulders on the left
+  if(hasFilter)fctx.filter=`blur(${Math.round(10*SC)}px)`;
+  for(let i=0;i<4;i++){fctx.fillStyle=`rgba(${i%2?120:20},${i%2?170:50},${i%2?150:45},${i%2?.10:.16})`;fctx.beginPath();fctx.ellipse(rnd(-.05,.18)*fw,rnd(.1,.9)*fh,rnd(70,130)*SC,rnd(60,110)*SC,rnd(0,3),0,7);fctx.fill()}
+  fctx.fillStyle='rgba(0,0,0,.22)';fctx.beginPath();fctx.ellipse(fw*1.02,fh*1.05,fw*.5,fh*.5,0,0,7);fctx.fill();
+  fctx.filter='none';
+  // small water plants
+  for(let c=0;c<6;c++){const bx=rnd(.05,.95)*fw,by=rnd(.1,.95)*fh;fctx.strokeStyle='rgba(110,170,120,.32)';fctx.lineWidth=1;
+    for(let k=0;k<6;k++){const len=rnd(14,30)*SC,a=-Math.PI/2+rnd(-.5,.5);fctx.beginPath();fctx.moveTo(bx,by);fctx.quadraticCurveTo(bx+Math.cos(a)*len*.5+rnd(-4,4),by+Math.sin(a)*len*.5,bx+Math.cos(a)*len,by+Math.sin(a)*len);fctx.stroke()}}
+}
+
+/* ---------- koi ---------- */
+const PROF=[[0,.62],[.05,.8],[.15,.96],[.3,1],[.46,.95],[.6,.82],[.74,.6],[.87,.38],[1,.22]];
+function prof(t){for(let i=1;i<PROF.length;i++){if(t<=PROF[i][0]){const a=PROF[i-1],b=PROF[i];return lerp(a[1],b[1],(t-a[0])/(b[0]-a[0]))}}return .15}
+class Koi{
+  constructor(v){
+    this.key=v;this.v=VARIETIES[v];this.depth=rnd(.78,.9);this.goal=null;
+    this.len=rnd(.8,1.1)*Math.max(W,H)*.18;this.len=clamp(this.len,110,360);
+    this.n=16;this.gap=this.len*.74/(this.n-1);
+    this.x=rnd(.12,.88)*W;this.y=rnd(.12,.88)*H;
+    this.a=Math.atan2(H/2-this.y,W/2-this.x)+rnd(-.8,.8);
+    this.base=rnd(.5,.72);this.speed=this.base;this.turn=0;this.t=rnd(0,100);this.ph=rnd(0,6.28);this.sd=rnd(0,100);this.flee=0;this.fleeA=0;
+    this.seg=Array.from({length:this.n},(_,i)=>({x:this.x-Math.cos(this.a)*i*this.gap,y:this.y-Math.sin(this.a)*i*this.gap}));
+    this.patches=[];
+    for(const [c,count,rmin,rmax,smin,smax] of this.v.patches){const m=Math.max(1,Math.round(count*rnd(.7,1.3)));
+      for(let i=0;i<m;i++)this.patches.push({c,s:rnd(smin,smax),l:rnd(-.6,.6),r:rnd(rmin,rmax),st:rnd(1,1.5),seed:rnd(0,100)})}
+  }
+  w(t){return this.len*.14*prof(t)}
+  startle(x,y){const d=Math.hypot(this.x-x,this.y-y);if(d<this.len*1.1){this.fleeA=Math.atan2(this.y-y,this.x-x);this.flee=900;this.speed=Math.max(this.speed,1.9)}}
+  update(dt){
+    this.t+=dt*.001;
+    let target=null,best=1e9;
+    for(const p of pellets){const d=Math.hypot(p.x-this.x,p.y-this.y);if(d<best&&d<480*SC){best=d;target=p}}
+    let desired,steer;
+    if(target){desired=Math.atan2(target.y-this.y,target.x-this.x);this.speed=Math.min(this.speed+.02,1.5);steer=.06;if(best<this.len*.08)target.eaten=true}
+    else{
+      desired=this.a+(Math.sin(this.t*.29+this.sd)*.6+Math.sin(this.t*.11+this.sd*1.7)*.4)*.5;steer=.012;
+      this.speed+=(this.base-this.speed)*.01;
+      const pad=Math.min(W,H)*.04;
+      if(!this.goal&&(this.x<pad||this.x>W-pad||this.y<pad||this.y>H-pad))this.goal={x:rnd(.2,.8)*W,y:rnd(.2,.8)*H};
+      if(this.goal){desired=Math.atan2(this.goal.y-this.y,this.goal.x-this.x);steer=.028;
+        if(Math.hypot(this.goal.x-this.x,this.goal.y-this.y)<this.len||(this.x>W*.2&&this.x<W*.8&&this.y>H*.2&&this.y<H*.8))this.goal=null}
+    }
+    if(this.flee>0){this.flee-=dt;desired=this.fleeA;steer=.07}
+    const da=((desired-this.a+Math.PI*3)%(Math.PI*2))-Math.PI;this.a+=clamp(da*steer,-.035,.035)*dt/16;
+    const sp=this.speed*dt*.06*SC*(reduce?.5:1);
+    this.x+=Math.cos(this.a)*sp;this.y+=Math.sin(this.a)*sp;
+    const s=this.seg;s[0].x=this.x;s[0].y=this.y;
+    this.ph+=dt*.001*(1.6+this.speed*1.6)*(reduce?.4:1);
+    for(let i=1;i<this.n;i++){const p=s[i-1],q=s[i];
+      const ang=Math.atan2(q.y-p.y,q.x-p.x);
+      q.x=p.x+Math.cos(ang)*this.gap;q.y=p.y+Math.sin(ang)*this.gap}
+  }
+  geom(){
+    const n=this.n,raw=this.seg,amp=this.len*.022*(.55+this.speed*.35)*(reduce?.3:1),s=[];
+    for(let i=0;i<n;i++){const t=i/(n-1),a=i===0?Math.atan2(raw[0].y-raw[1].y,raw[0].x-raw[1].x):Math.atan2(raw[i-1].y-raw[i].y,raw[i-1].x-raw[i].x);
+      const off=Math.sin(this.ph-t*2.6)*amp*t*t;s.push({x:raw[i].x+Math.cos(a+Math.PI/2)*off,y:raw[i].y+Math.sin(a+Math.PI/2)*off})}
+    const L=[],R=[],A=[];
+    for(let i=0;i<n;i++){const a=i===0?Math.atan2(s[0].y-s[1].y,s[0].x-s[1].x):Math.atan2(s[i-1].y-s[i].y,s[i-1].x-s[i].x);A.push(a);
+      const w=this.w(i/(n-1));L.push({x:s[i].x+Math.cos(a-Math.PI/2)*w,y:s[i].y+Math.sin(a-Math.PI/2)*w});R.push({x:s[i].x+Math.cos(a+Math.PI/2)*w,y:s[i].y+Math.sin(a+Math.PI/2)*w})}
+    const path=new Path2D();
+    const smooth=(pts)=>{for(let i=1;i<pts.length-1;i++){const m={x:(pts[i].x+pts[i+1].x)/2,y:(pts[i].y+pts[i+1].y)/2};path.quadraticCurveTo(pts[i].x,pts[i].y,m.x,m.y)}path.lineTo(pts[pts.length-1].x,pts[pts.length-1].y)};
+    path.moveTo(L[0].x,L[0].y);smooth(L);path.lineTo(R[n-1].x,R[n-1].y);smooth(R.slice().reverse());
+    const w0=this.w(0);path.ellipse(s[0].x,s[0].y,w0*.9,w0,A[0],Math.PI/2,-Math.PI/2,true);path.closePath();
+    return{s,A,L,R,path};
+  }
+  at(t,g){const f=t*(this.n-1),i=Math.min(this.n-2,Math.floor(f)),k=f-i,p=g.s[i],q=g.s[i+1];return{x:lerp(p.x,q.x,k),y:lerp(p.y,q.y,k),a:g.A[i]}}
+  tail(){const g=this._g,s=g.s,n=this.n,b=s[n-1],dir=g.A[n-1]+Math.PI,T=this.len*.4,ww=this.w(1);
+    const fl=Math.sin(this.ph-3.1)*.11*(reduce?.3:1),p=new Path2D();
+    const c=Math.cos(dir+fl*.5),sn=Math.sin(dir+fl*.5),tr=(x,y)=>[b.x+x*c-y*sn,b.y+x*sn+y*c];
+    const bend=fl*T*.3;
+    p.moveTo(...tr(-T*.02,-ww));
+    p.bezierCurveTo(...tr(T*.35,-T*.14),...tr(T*.7,-T*.34+bend*.5),...tr(T,-T*.44+bend));
+    p.quadraticCurveTo(...tr(T*.72,-T*.06+bend*.6),...tr(T*.6,bend*.5));
+    p.quadraticCurveTo(...tr(T*.72,T*.06+bend*.6),...tr(T,T*.44+bend));
+    p.bezierCurveTo(...tr(T*.7,T*.34+bend*.5),...tr(T*.35,T*.14),...tr(-T*.02,ww));
+    p.closePath();return p}
+  fin(t,side,F,spread){const g=this._g,o=this.at(t,g),w=this.w(t)*.8,base={x:o.x+Math.cos(o.a+side*Math.PI/2)*w,y:o.y+Math.sin(o.a+side*Math.PI/2)*w};
+    const flap=Math.sin(this.t*1.6+side*1.3)*.08*(reduce?.3:1),r=o.a+side*(Math.PI/2+spread+flap),p=new Path2D(),c=Math.cos(r),sn=Math.sin(r),tr=(x,y)=>[base.x+x*c-y*sn,base.y+x*sn+y*c];
+    const k=side;p.moveTo(...tr(0,-F*.12*k));p.bezierCurveTo(...tr(F*.45,-F*.42*k),...tr(F*1.05,-F*.2*k),...tr(F,F*.08*k));p.bezierCurveTo(...tr(F*.85,F*.3*k),...tr(F*.3,F*.25*k),...tr(0,F*.12*k));p.closePath();return p}
+  blob(x,y,a,r,st,seed){const p=new Path2D();for(let k=0;k<=14;k++){const an=k/14*Math.PI*2,rr=r*(.72+.22*Math.sin(seed+k*1.9)+.14*Math.sin(seed*1.7+k*4.3));const lx=Math.cos(an)*rr*st,ly=Math.sin(an)*rr;const px=x+lx*Math.cos(a)-ly*Math.sin(a),py=y+lx*Math.sin(a)+ly*Math.cos(a);k?p.lineTo(px,py):p.moveTo(px,py)}p.closePath();return p}
+  drawShadow(){const g=this._g=this.geom(),o=this.len*.09;ctx.save();ctx.translate(o*.8,o);ctx.fill(g.path);ctx.fill(this.tail());ctx.restore()}
+  draw(){
+    const g=this._g,v=this.v,W0=this.w(.28);
+    ctx.save();ctx.globalAlpha=this.depth;
+    // tail & fins
+    ctx.fillStyle=v.fin;ctx.globalAlpha=this.depth*.62;
+    const tail=this.tail();ctx.fill(tail);
+    ctx.globalAlpha=this.depth*.7;
+    for(const sd of[-1,1]){ctx.fill(this.fin(.2,sd,this.len*.2,.55));ctx.fill(this.fin(.56,sd,this.len*.1,.75))}
+    ctx.globalAlpha=this.depth*.18;ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke(tail);
+    // body
+    ctx.globalAlpha=this.depth;ctx.fillStyle=v.base;ctx.fill(g.path);
+    ctx.save();ctx.clip(g.path);
+    for(const p of this.patches){const o=this.at(p.s,g),w=this.w(p.s);ctx.fillStyle=p.c;ctx.fill(this.blob(o.x+Math.cos(o.a+Math.PI/2)*p.l*w,o.y+Math.sin(o.a+Math.PI/2)*p.l*w,o.a,p.r*W0,p.st,p.seed))}
+    if(v.crown){const o=this.at(.15,g);ctx.fillStyle=v.crown;ctx.beginPath();ctx.ellipse(o.x,o.y,W0*.4,W0*.36,o.a,0,7);ctx.fill()}
+    // back highlight
+    ctx.strokeStyle=v.stripe||'rgba(255,255,255,.13)';ctx.lineWidth=W0*.42;ctx.lineCap='round';ctx.beginPath();
+    for(let i=1;i<this.n*.72;i++){const q=g.s[i];i===1?ctx.moveTo(q.x,q.y):ctx.lineTo(q.x,q.y)}ctx.stroke();
+    // belly shading
+    ctx.strokeStyle='rgba(0,0,0,.12)';ctx.lineWidth=W0*.5;ctx.stroke(g.path);
+    ctx.restore();
+    // eyes
+    const h=this.at(.06,g),ew=this.w(.06)*.6;ctx.fillStyle='#141716';
+    for(const sd of[-1,1]){ctx.beginPath();ctx.arc(h.x+Math.cos(h.a+sd*Math.PI/2)*ew,h.y+Math.sin(h.a+sd*Math.PI/2)*ew,Math.max(1.6,this.len*.014),0,7);ctx.fill()}
+    ctx.restore();
+  }
+}
+
+/* ---------- lily pads ---------- */
+let pads=[];
+function makePads(){const count=clamp(Math.round(W*H/150000),4,9);pads=[];let tries=0;
+  while(pads.length<count&&tries<300){tries++;const r=rnd(28,58)*SC,x=rnd(r,W-r),y=rnd(r+40,H-r-40);if(pads.some(p=>Math.hypot(p.x-x,p.y-y)<p.r+r+18))continue;pads.push({x,y,r,rot:rnd(0,6.28),notch:rnd(.35,.6),bloom:false,ph:rnd(0,100)})}
+  pads.slice().sort(()=>Math.random()-.5).slice(0,2).forEach(p=>p.bloom=true)}
+function drawPad(p,now){
+  const bx=p.x+Math.sin(now*.00025+p.ph)*3*SC,by=p.y+Math.cos(now*.0002+p.ph)*2*SC,rot=p.rot+Math.sin(now*.00015+p.ph)*.06;
+  ctx.save();ctx.translate(bx,by);
+  ctx.fillStyle='rgba(4,16,14,.18)';ctx.beginPath();ctx.moveTo(p.r*.06+3,p.r*.08+4);ctx.arc(p.r*.06+3,p.r*.08+4,p.r,rot+p.notch/2,rot-p.notch/2+Math.PI*2);ctx.closePath();ctx.fill();
+  ctx.rotate(rot);
+  const g=ctx.createRadialGradient(-p.r*.2,-p.r*.2,0,0,0,p.r);g.addColorStop(0,'#7ab884');g.addColorStop(1,'#5a9a68');
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,p.r,p.notch/2,Math.PI*2-p.notch/2);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(40,85,52,.55)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.strokeStyle='rgba(40,85,52,.35)';ctx.lineWidth=1;
+  for(let k=0;k<9;k++){const a=p.notch/2+(Math.PI*2-p.notch)*(k+.5)/9;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*p.r*.96,Math.sin(a)*p.r*.96);ctx.stroke()}
+  if(p.bloom&&isOn('blooms')){
+    const R=p.r*.62;
+    for(const [layer,col,sc] of[[0,'#e79db1',1],[1,'#f1b7c7',.78],[2,'#f9d6df',.52]]){
+      ctx.fillStyle=col;const m=layer===2?6:8;
+      for(let k=0;k<m;k++){const a=k/m*Math.PI*2+layer*.4;ctx.save();ctx.rotate(a);ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(R*sc*.35,-R*sc*.32,R*sc*.85,-R*sc*.2,R*sc,0);ctx.bezierCurveTo(R*sc*.85,R*sc*.2,R*sc*.35,R*sc*.32,0,0);ctx.fill();ctx.restore()}}
+    ctx.fillStyle='#efc94c';ctx.beginPath();ctx.arc(0,0,R*.16,0,7);ctx.fill()}
+  ctx.restore()}
+
+/* ---------- effects ---------- */
+let fish=[];function spawnFish(){fish=[];for(const [k,c] of Object.entries(S.koi))if(VARIETIES[k])for(let i=0;i<c.shown;i++)fish.push(new Koi(k))}
+const ripples=[],pellets=[],flying=[],sinking=[],drops=[];
+function ripple(x,y,big=1){ripples.push({x,y,r:2*SC,a:.5*big,big})}
+function drawCoin(x,y,r,tilt,alpha=1,spin=0){
+  ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);ctx.rotate(tilt);ctx.scale(Math.max(.15,Math.abs(Math.cos(spin))),1);
+  const g=ctx.createRadialGradient(-r*.3,-r*.3,0,0,0,r);g.addColorStop(0,'#fbe6a2');g.addColorStop(.55,'#e3b44c');g.addColorStop(1,'#9c711c');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fill();ctx.strokeStyle='rgba(110,70,10,.55)';ctx.lineWidth=Math.max(1,r*.12);ctx.strokeRect(-r*.3,-r*.3,r*.6,r*.6);ctx.restore()}
+function throwCoin(tx,ty){const sx=W/2,sy=H+30;flying.push({sx,sy,tx,ty,t:0,dur:reduce?250:750+Math.hypot(tx-sx,ty-sy)*.35,tilt:rnd(-.6,.6)})}
+function landCoin(c){ripple(c.tx,c.ty,1.4);ripple(c.tx,c.ty,.9);for(const k of fish)k.startle(c.tx,c.ty);
+  for(let i=0;i<8;i++)drops.push({x:c.tx,y:c.ty,vx:rnd(-1.6,1.6),vy:rnd(-2.6,-1),life:500});sinking.push({x:c.tx,y:c.ty,t:0,tilt:c.tilt})}
+const flies=Array.from({length:22},()=>({x:rnd(0,1),y:rnd(0,1),p:rnd(0,100)}));
+
+/* ---------- loop ---------- */
+let last=performance.now();
+function frame(now){requestAnimationFrame(frame);try{draw(now)}catch(e){console.error(e)}}
+function draw(now){
+  const dt=Math.min(now-last,50);last=now;
+  ctx.drawImage(floor,0,0,W,H);
+  // slow light shimmer
+  if(!reduce&&S.settings.shimmer){ctx.globalCompositeOperation='lighter';for(let i=0;i<3;i++){const x=(Math.sin(now*.00007*(i+1)+i*2)*.4+.5)*W,y=(Math.cos(now*.00006*(i+2)+i)*.4+.45)*H,r=Math.max(W,H)*.25;
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba(90,150,130,.06)');g.addColorStop(1,'rgba(90,150,130,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}ctx.globalCompositeOperation='source-over'}
+  // coins on the floor
+  for(const c of S.pondCoins){const x=c.x*W,y=c.y*H;drawCoin(x,y,7*SC,c.r,.5);const gl=Math.sin(now*.0012+c.x*40+c.y*30);if(gl>.97){ctx.fillStyle=`rgba(255,248,215,${(gl-.97)*25})`;ctx.beginPath();ctx.arc(x-2,y-2,2.2,0,7);ctx.fill()}}
+  for(let i=sinking.length-1;i>=0;i--){const s=sinking[i];s.t+=dt/1400;const k=Math.min(s.t,1);drawCoin(s.x+Math.sin(k*9)*4*(1-k),s.y+k*6,(13-6*k)*SC,s.tilt+k*.8,1-.5*k,k*6);
+    if(k>=1){S.pondCoins.push({x:s.x/W,y:(s.y+6)/H,r:s.tilt+.8});if(S.pondCoins.length>300)S.pondCoins.shift();save();renderWishes();sinking.splice(i,1)}}
+  // food
+  for(let i=pellets.length-1;i>=0;i--){const p=pellets[i];p.life-=dt;if(p.eaten||p.life<0){if(p.eaten)ripple(p.x,p.y,.5);pellets.splice(i,1);continue}ctx.fillStyle='#b88a4a';ctx.beginPath();ctx.arc(p.x,p.y,3*SC,0,7);ctx.fill()}
+  // koi: shadows first, then bodies
+  for(const k of fish)k.update(dt);
+  if(hasFilter)ctx.filter=`blur(${Math.round(7*SC)}px)`;ctx.fillStyle='rgba(3,14,13,.32)';for(const k of fish)k.drawShadow();ctx.filter='none';
+  for(const k of fish)k.draw();
+  // water haze over the fish
+  ctx.fillStyle='rgba(28,62,57,.22)';ctx.fillRect(0,0,W,H);
+  if(isOn('rain')&&!reduce&&Math.random()<.16)ripple(rnd(0,W),rnd(0,H),.6);
+  for(let i=ripples.length-1;i>=0;i--){const r=ripples[i];r.r+=dt*.045*SC*(r.big>.8?1:.8);r.a-=dt*.0006;if(r.a<=0){ripples.splice(i,1);continue}
+    ctx.strokeStyle=`rgba(225,242,235,${r.a})`;ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,7);ctx.stroke();
+    if(r.r>14){ctx.strokeStyle=`rgba(225,242,235,${r.a*.45})`;ctx.beginPath();ctx.arc(r.x,r.y,r.r*.62,0,7);ctx.stroke()}}
+  for(const p of pads)drawPad(p,now);
+  if(isOn('evening')){ctx.fillStyle='rgba(4,12,20,.42)';ctx.fillRect(0,0,W,H);
+    for(const f of flies){f.p+=dt*.001;const x=(f.x+Math.sin(f.p*.7)*.03)*W,y=(f.y+Math.cos(f.p*.5)*.03)*H,a=Math.sin(f.p*2)*.5+.5;
+      const gg=ctx.createRadialGradient(x,y,0,x,y,14);gg.addColorStop(0,`rgba(240,228,140,${a*.9})`);gg.addColorStop(1,'rgba(240,228,140,0)');ctx.fillStyle=gg;ctx.beginPath();ctx.arc(x,y,14,0,7);ctx.fill()}}
+  for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.life-=dt;d.x+=d.vx*dt*.06;d.y+=d.vy*dt*.06;d.vy+=.006*dt;if(d.life<0){drops.splice(i,1);continue}ctx.fillStyle=`rgba(225,242,236,${d.life/500})`;ctx.beginPath();ctx.arc(d.x,d.y,1.8,0,7);ctx.fill()}
+  for(let i=flying.length-1;i>=0;i--){const c=flying[i];c.t+=dt/c.dur;const k=Math.min(c.t,1);const x=c.sx+(c.tx-c.sx)*k,arc=Math.sin(k*Math.PI)*Math.min(260,H*.35),y=c.sy+(c.ty-c.sy)*k-arc,r=(26-13*k)*SC;
+    ctx.fillStyle='rgba(6,20,18,.25)';ctx.beginPath();ctx.ellipse(x+arc*.15,c.sy+(c.ty-c.sy)*k,r*.8,r*.35,0,0,7);ctx.fill();drawCoin(x,y,r,c.tilt,1,k*14);if(k>=1){landCoin(c);flying.splice(i,1)}}
+}
+
+/* ---------- layout ---------- */
+let rt;
+function resize(first){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;SC=clamp(Math.min(W,H)/800,.55,1.3);cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  buildFloor();makePads();if(first)spawnFish();else for(const k of fish){k.x=clamp(k.x,0,W);k.y=clamp(k.y,0,H)}}
+addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>resize(false),150)});
+
+/* ---------- UI ---------- */
+const $=id=>document.getElementById(id);
+function renderCoins(){$('coinCount').textContent=S.coins.toLocaleString();$('shopBal').textContent=S.coins.toLocaleString();if(mode!=='ripple')renderPill()}
+let toastT;function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400)}
+function renderWishes(){const n=S.pondCoins.length+sinking.length;$('wishes').textContent=n?`${n.toLocaleString()} ${n===1?'coin':'coins'} in your pond`:'No coins in the pond yet'}
+setTimeout(()=>$('title').classList.add('gone'),7000);
+
+/* ---------- sound engine (all generated live, no files) ---------- */
+let AC=null,master,verb,noiseBuf;const chans={};
+const hz=n=>440*Math.pow(2,(n-69)/12);
+function startAudio(){
+  if(AC){if(AC.state==='suspended')AC.resume();return}
+  const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+  AC=new C();master=AC.createGain();master.gain.value=0;
+  const comp=AC.createDynamicsCompressor();comp.threshold.value=-14;master.connect(comp).connect(AC.destination);
+  const len=AC.sampleRate*3.2,ir=AC.createBuffer(2,len,AC.sampleRate);
+  for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6)}
+  const conv=AC.createConvolver();conv.buffer=ir;verb=AC.createGain();verb.gain.value=.55;verb.connect(conv).connect(master);
+  noiseBuf=AC.createBuffer(1,AC.sampleRate*4,AC.sampleRate);{const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+  for(const [k] of SOUND_LIST){const out=AC.createGain();out.gain.value=0;out.connect(master);chans[k]={out,next:0};GEN[k].init(chans[k])}
+  applyAudio();setInterval(tickAudio,100);
+}
+function noise(){const n=AC.createBufferSource();n.buffer=noiseBuf;n.loop=true;n.start(0,Math.random()*3.5);return n}
+function filt(type,f,q=.7){const b=AC.createBiquadFilter();b.type=type;b.frequency.value=f;b.Q.value=q;return b}
+function panned(dest){if(!AC.createStereoPanner)return dest;const p=AC.createStereoPanner();p.pan.value=rnd(-.7,.7);p.connect(dest);return p}
+function tone(dest,{type='sine',f,f2,t,dur,peak,attack=.01,send=0}){
+  const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur*.8);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+attack);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(dest);if(send){const sg=AC.createGain();sg.gain.value=send;g.connect(sg).connect(verb)}o.start(t);o.stop(t+dur+.05)}
+function bell(dest,f,t,amp){for(const [m,a,d] of[[1,1,4.5],[2.76,.32,2.4],[5.4,.12,1.2]])tone(dest,{f:f*m,t,dur:d,peak:amp*a,attack:.004,send:.6})}
+const PENTA=[62,64,66,69,71,74,76,78,81,83].map(hz);
+const GEN={
+  music:{base:.55,init(c){c.idx=4;c.chord=0;c.nextChord=0;c.pad=filt('lowpass',900);const pg=AC.createGain();pg.gain.value=.5;c.pad.connect(pg).connect(c.out);const sg=AC.createGain();sg.gain.value=.5;pg.connect(sg).connect(verb)},
+    tick(c,t){
+      if(t>=c.nextChord){const CH=[[50,57,66,69],[47,54,62,66],[43,50,59,62],[45,52,57,64]][c.chord++%4];const at=Math.max(t,c.nextChord);
+        for(const n of CH)for(const det of[-4,4]){const o=AC.createOscillator(),g=AC.createGain();o.type='triangle';o.frequency.value=hz(n);o.detune.value=det;
+          g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(.05,at+3);g.gain.setValueAtTime(.05,at+7);g.gain.linearRampToValueAtTime(0,at+11);o.connect(g).connect(c.pad);o.start(at);o.stop(at+11.1)}
+        c.nextChord=at+8}
+      if(!c.nextNote||t>=c.nextNote){const at=Math.max(t,c.nextNote||t)+.05;
+        if(Math.random()<.72){c.idx=clamp(c.idx+[-2,-1,-1,1,1,2][Math.floor(Math.random()*6)],0,PENTA.length-1);
+          tone(c.out,{type:'triangle',f:PENTA[c.idx],t:at,dur:1.6,peak:.2,attack:.006,send:.45});tone(c.out,{f:PENTA[c.idx]*2,t:at,dur:.6,peak:.05,attack:.004})}
+        c.nextNote=at+[.5,.75,.75,1,1,1.5,2][Math.floor(Math.random()*7)]}}},
+  wind:{base:.55,init(c){const n=noise();c.lp=filt('lowpass',500,1.2);c.g=AC.createGain();c.g.gain.value=.6;n.connect(c.lp).connect(c.g).connect(c.out)},
+    tick(c,t){if(t>=c.next){c.next=t+rnd(2,5);c.lp.frequency.setTargetAtTime(rnd(220,950),t,1.6);c.g.gain.setTargetAtTime(rnd(.25,1),t,1.6)}}},
+  stream:{base:.5,init(c){const n=noise();c.bp=filt('bandpass',800,.6);const hi=filt('highpass',2600),hg=AC.createGain();hg.gain.value=.18;n.connect(c.bp).connect(c.out);n.connect(hi).connect(hg).connect(c.out)},
+    tick(c,t){if(t>=c.next){c.next=t+rnd(.25,.6);c.bp.frequency.setTargetAtTime(rnd(550,1150),t,.25)}}},
+  rain:{base:.45,init(c){const n=noise(),g=AC.createGain();g.gain.value=.55;n.connect(filt('highpass',1400)).connect(filt('lowpass',7000)).connect(g).connect(c.out)},
+    tick(c,t){for(let i=0;i<3;i++)if(Math.random()<.5){const f=rnd(1800,4200);tone(panned(c.out),{f,f2:f*.6,t:t+Math.random()*.1,dur:.05,peak:.12,attack:.002})}}},
+  crickets:{base:.22,init(c){c.v=[{next:0,f:rnd(4300,4600)},{next:.4,f:rnd(4700,5000)}];c.p=panned(c.out)},
+    tick(c,t){for(const v of c.v)if(t>=v.next){const at=Math.max(t,v.next)+.02;for(let k=0;k<4;k++)tone(c.p,{f:v.f,t:at+k*.05,dur:.03,peak:.22,attack:.006});v.next=at+(Math.random()<.15?rnd(2,4):rnd(.6,1.1))}}},
+  birds:{base:.35,init(c){c.next=1},
+    tick(c,t){if(t>=c.next){const p=panned(c.out),n=2+Math.floor(Math.random()*5),f0=rnd(2300,3600),shape=Math.random();let at=t+.05;
+      for(let i=0;i<n;i++){const f=f0*rnd(.9,1.15),d=rnd(.06,.15);tone(p,{f,f2:shape<.5?f*rnd(1.2,1.5):f*rnd(.6,.8),t:at,dur:d,peak:.22,attack:.008,send:.25});at+=d+rnd(.04,.13)}
+      c.next=t+rnd(2.5,8)}}},
+  chimes:{base:.4,init(c){c.next=.5},
+    tick(c,t){if(t>=c.next){let at=t+.05;const m=1+Math.floor(Math.random()*3);for(let i=0;i<m;i++){bell(c.out,PENTA[4+Math.floor(Math.random()*6)]*2,at,.12);at+=rnd(.25,.8)}c.next=t+rnd(3,9)}}},
+};
+function applyAudio(){if(!AC)return;const t=AC.currentTime,st=S.settings;
+  master.gain.setTargetAtTime(st.muted?0:.9,t,.25);
+  for(const [k] of SOUND_LIST){const x=st.snd[k];chans[k].out.gain.setTargetAtTime(x.on?GEN[k].base*x.vol*x.vol*1.6:0,t,.3)}}
+function tickAudio(){if(!AC||S.settings.muted)return;const t=AC.currentTime;for(const [k] of SOUND_LIST){const x=S.settings.snd[k];if(x.on&&x.vol>0)GEN[k].tick(chans[k],t)}}
+addEventListener('pointerdown',startAudio,{capture:true});addEventListener('keydown',startAudio,{capture:true});
+
+/* ---------- settings panel ---------- */
+const menu=$('menu'),mb=$('menuBtn');
+function toggleMenu(open){open=open??!menu.classList.contains('open');menu.classList.toggle('open',open);mb.setAttribute('aria-expanded',open)}
+mb.onclick=e=>{e.stopPropagation();toggleMenu()};
+document.addEventListener('pointerdown',e=>{if(menu.classList.contains('open')&&!menu.contains(e.target)&&e.target!==mb&&!mb.contains(e.target)&&e.target!==cvs)toggleMenu(false)});
+function setSwitch(el,on){el.setAttribute('aria-checked',on)}
+$('soundRows').innerHTML=SOUND_LIST.map(([k,l])=>`<div class="srow" data-row="${k}"><span class="lbl">${l}</span><input type="range" min="0" max="100" step="1" data-vol="${k}" aria-label="${l} volume"><button class="switch" role="switch" data-snd="${k}" aria-label="${l}"></button></div>`).join('');
+function renderSettings(){const st=S.settings;
+  for(const [k] of SOUND_LIST){const x=st.snd[k];menu.querySelector(`[data-vol="${k}"]`).value=Math.round(x.vol*100);setSwitch(menu.querySelector(`[data-snd="${k}"]`),x.on);menu.querySelector(`[data-row="${k}"]`).classList.toggle('off',!x.on)}
+  setSwitch($('muteAll'),st.muted);
+  $('setupRows').innerHTML=Object.entries(EXTRAS).filter(([k])=>S.extras.includes(k)).map(([k,v])=>`<div class="srow two"><span class="lbl">${v.name}</span><button class="switch" role="switch" data-xt="${k}" aria-checked="${isOn(k)}" aria-label="Show ${v.name}"></button></div>`).join('');
+  menu.querySelectorAll('[data-vis]').forEach(b=>setSwitch(b,!!st[b.dataset.vis]));
+  document.body.classList.toggle('hidden-ui',!st.showUi);if(!st.showUi)$('title').classList.add('gone')}
+menu.addEventListener('input',e=>{const k=e.target.dataset.vol;if(!k)return;const x=S.settings.snd[k];x.vol=e.target.value/100;if(x.vol>0&&!x.on){x.on=true;renderSettings()}applyAudio();save()});
+menu.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const st=S.settings;
+  if(b.dataset.snd){const x=st.snd[b.dataset.snd];x.on=!x.on;if(x.on&&x.vol===0)x.vol=.3;startAudio();applyAudio();renderSettings();save();return}
+  if(b.id==='muteAll'){st.muted=!st.muted;applyAudio();renderSettings();save();return}
+  if(b.dataset.xt){toggleExtra(b.dataset.xt);return}
+  if(b.dataset.vis){st[b.dataset.vis]=!st[b.dataset.vis];renderSettings();save();return}
+  if(b.dataset.min){setTimer(+b.dataset.min);return}
+  const a=b.dataset.act;if(!a)return;toggleMenu(false);
+  if(a==='throw'||a==='feed')setMode(a);if(a==='shop')openShop();if(a==='topup')openShop('coins')});
+
+/* ---------- timer ---------- */
+let T={mode:'up',start:Date.now(),end:0,dur:0};
+function setTimer(min){const same=T.mode==='down'&&T.dur===min*60000;
+  T=same?{mode:'up',start:Date.now()}:{mode:'down',dur:min*60000,end:Date.now()+min*60000};
+  menu.querySelectorAll('[data-min]').forEach(b=>b.setAttribute('aria-pressed',!same&&+b.dataset.min===min));
+  $('timerNote').textContent=same?'Timer cleared. Counting your time at the pond.':`A bell will ring in ${min} minutes. Tap ${min} mins again to clear it.`;
+  if(!same)toast(`Timer set for ${min} minutes.`);tickTimer()}
+const fmt=ms=>{const s=Math.max(0,Math.round(ms/1000));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')};
+function tickTimer(){const now=Date.now();let label,frac;
+  if(T.mode==='down'){const left=T.end-now;label=fmt(left);frac=1-left/T.dur;
+    if(left<=0){T={mode:'done'};startAudio();if(AC){const t=AC.currentTime;[0,1.2,2.4].forEach((d,i)=>bell(master,PENTA[5+i]*2,t+d,.25))}
+      toast('Time is up. Take one more slow breath.');menu.querySelectorAll('[data-min]').forEach(b=>b.setAttribute('aria-pressed',false));$('timerNote').textContent='Session complete. Pick a length to start another.';label='0:00';frac=1}}
+  else if(T.mode==='done'){label='0:00';frac=1}
+  else{const el=now-T.start;label=fmt(el);frac=(el/1000%60)/60}
+  $('clock').textContent=label;$('ring').setAttribute('stroke-dashoffset',226.2*(1-frac))}
+setInterval(tickTimer,1000);tickTimer();
+$('timer').onclick=()=>{if(T.mode==='done'){T={mode:'up',start:Date.now()};tickTimer();$('timerNote').textContent='Counting your time at the pond. Pick a length for a gentle bell when it ends.'}else toggleMenu(true)};
+
+let mode='ripple';
+const MODE_TEXT={throw:'Tap the water to throw',feed:'Tap the water to feed'};
+function renderPill(){$('pillText').textContent=`${MODE_TEXT[mode]} · ${S.coins.toLocaleString()} left`}
+function setMode(m){mode=m;$('pill').classList.toggle('show',m!=='ripple');if(m!=='ripple')renderPill();
+  document.querySelectorAll('[data-dock]').forEach(b=>{if(b.dataset.dock!=='shop')b.setAttribute('aria-pressed',b.dataset.dock===m)})}
+$('dock').addEventListener('click',e=>{const b=e.target.closest('[data-dock]');if(!b)return;const a=b.dataset.dock;toggleMenu(false);
+  if(a==='shop'){openShop();return}setMode(mode===a?'ripple':a)});
+$('pillDone').onclick=()=>setMode('ripple');
+const WISH_LINES=['Your coin settles among the stones.','A wish, kept by the koi.','The water closes over it. Breathe out.','Somewhere a koi takes note.','Another small hope in the pond.'];
+cvs.addEventListener('pointerdown',e=>{
+  if(menu.classList.contains('open')){toggleMenu(false);return}
+  const x=e.clientX,y=e.clientY;
+  if(mode==='throw'){if(S.coins<1){toast('Out of coins. Get more from the menu.');return}
+    S.coins--;save();renderCoins();throwCoin(x,y);setTimeout(()=>{renderWishes();toast(WISH_LINES[Math.floor(Math.random()*WISH_LINES.length)])},reduce?300:900);return}
+  ripple(x,y,1);for(const k of fish)if(Math.hypot(k.x-x,k.y-y)<k.len*.4)k.startle(x,y);
+  if(mode==='feed'){if(S.coins<1){toast('Out of coins. Get more from the menu.');return}
+    S.coins--;save();renderCoins();for(let i=0;i<5;i++)pellets.push({x:x+rnd(-18,18)*SC,y:y+rnd(-18,18)*SC,life:12000})}
+});
+
+// shop
+const sheet=$('sheet'),scrim=$('scrim');
+function openShop(tab='items'){renderShop();switchTab(tab);sheet.classList.add('open');scrim.classList.add('open');setTimeout(()=>$('closeShop').focus(),50)}
+function closeShop(){sheet.classList.remove('open');scrim.classList.remove('open')}
+$('closeShop').onclick=closeShop;scrim.onclick=closeShop;
+addEventListener('keydown',e=>{if(e.key==='Escape'){closeShop();toggleMenu(false)}});
+function switchTab(t){document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));$('tab-items').hidden=t!=='items';$('tab-coins').hidden=t!=='coins'}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+const coinSvg='<span class="coin-dot" aria-hidden="true"></span>';
+function koiSwatch(k){const v=VARIETIES[k],p=v.patches[0];return `<span class="swatch"><svg width="40" height="40" viewBox="0 0 40 40"><path d="M29 20 L38 13 L35 20 L38 27Z" fill="${v.fin}" opacity=".7"/><ellipse cx="17" cy="20" rx="13" ry="6.2" fill="${v.base}"/>${p?`<ellipse cx="17" cy="19" rx="4.5" ry="3.2" fill="${p[0]}"/>`:''}${v.crown?`<circle cx="8" cy="20" r="2.8" fill="${v.crown}"/>`:''}</svg></span>`}
+function renderShop(){
+  const total=Object.values(S.koi).reduce((n,c)=>n+c.shown,0);
+  let h=`<h3>Koi <small style="font-family:var(--sans);font-size:.8rem">(${total} swimming)</small></h3>`;
+  for(const [k,v] of Object.entries(VARIETIES)){const c=kc(k),full=c.owned>=MAX_EACH,cost=v.price;
+    const status=c.owned?`You own ${c.owned} of ${MAX_EACH} · ${c.shown} swimming`:(cost?`${cost} coins each · up to ${MAX_EACH}`:`Free · up to ${MAX_EACH}`);
+    const buy=full?`<button class="buy" disabled>Max ${MAX_EACH}</button>`
+      :`<button class="buy" data-buy="${k}" ${S.coins<cost?'disabled':''} aria-label="Buy a ${v.name}${cost?` for ${cost} coins`:''}">${cost?`<span class="price">${coinSvg}${cost}</span>`:'Add free'}</button>`;
+    const step=c.owned?`<div class="stepper" aria-label="${v.name} swimming"><button data-minus="${k}" aria-label="Hide one ${v.name}" ${c.shown?'':'disabled'}>−</button><span>${c.shown}</span><button data-plus="${k}" aria-label="Show one more ${v.name}" ${c.shown<c.owned?'':'disabled'}>+</button></div>`:'';
+    h+=`<div class="item">${koiSwatch(k)}<div><strong>${v.name}</strong><small>${v.desc}</small><small class="own">${status}</small></div><div class="koi-actions">${buy}${step}</div></div>`}
+  h+='<h3>Pond setup</h3>';
+  for(const [k,v] of Object.entries(EXTRAS)){const own=S.extras.includes(k);
+    h+=`<div class="item"><span class="swatch"><svg width="26" height="26"><circle cx="13" cy="13" r="10" fill="${v.color}"/></svg></span><div><strong>${v.name}</strong><small>${v.desc}</small>${own?`<small class="own">${isOn(k)?'Showing in your pond':'Hidden from your pond'}</small>`:''}</div>${own?`<button class="switch" role="switch" data-xt="${k}" aria-checked="${isOn(k)}" aria-label="Show ${v.name}"></button>`:`<button class="buy" data-extra="${k}" ${S.coins<v.price?'disabled':''}><span class="price">${coinSvg}${v.price}</span></button>`}</div>`}
+  h+=`<p class="note">You can keep up to ${MAX_EACH} of each koi. Use − to hide a koi without losing it, and + to bring a hidden one back for free. Pond setup items you own can be switched on and off anytime.</p>`;
+  $('tab-items').innerHTML=h;
+  let c='';for(const p of PACKS)c+=`<div class="pack ${p.best?'best':''}"><div><span class="amt">${coinSvg}${p.coins.toLocaleString()}</span><small>${p.label}</small></div><button class="btn-gold" data-pack="${p.coins}">₱${p.price}</button></div>`;
+  c+='<p class="note">Coins can be thrown into the pond, or spent on food, new koi and pond extras. Purchases here are a demo and charge nothing.</p>';
+  $('tab-coins').innerHTML=c;
+}
+function toggleExtra(k){const off=S.extrasOff;const i=off.indexOf(k);if(i>=0)off.splice(i,1);else off.push(k);save();renderShop();renderSettings()}
+sheet.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.buy){const k=b.dataset.buy,v=VARIETIES[k],c=kc(k);
+    if(c.owned>=MAX_EACH){toast(`You already have ${MAX_EACH} ${v.name}.`);return}if(S.coins<v.price){toast('Not enough coins. Get more in the Buy coins tab.');return}
+    S.coins-=v.price;c.owned++;c.shown++;fish.push(new Koi(k));renderCoins();save();renderShop();
+    toast(c.owned>=MAX_EACH?`You now have all ${MAX_EACH} ${v.name}.`:(v.price?`You bought a ${v.name}. It joined your pond.`:`A ${v.name} joined your pond.`))}
+  if(b.dataset.plus){const k=b.dataset.plus,c=kc(k);if(c.shown>=c.owned)return;c.shown++;fish.push(new Koi(k));save();renderShop();toast(`${VARIETIES[k].name} is back in your pond.`)}
+  if(b.dataset.minus){const k=b.dataset.minus,c=kc(k);if(!c.shown)return;c.shown--;
+    for(let i=fish.length-1;i>=0;i--)if(fish[i].key===k){fish.splice(i,1);break}
+    save();renderShop();toast(`One ${VARIETIES[k].name} hidden. Tap + to bring it back for free.`)}
+  if(b.dataset.xt)toggleExtra(b.dataset.xt);
+  if(b.dataset.extra){const k=b.dataset.extra,v=EXTRAS[k];if(S.coins<v.price)return;S.coins-=v.price;S.extras.push(k);save();renderCoins();renderShop();renderSettings();toast(`${v.name} added to your pond.`)}
+  if(b.dataset.pack)startCheckout(PACKS.find(p=>p.coins==b.dataset.pack))});
+
+// checkout (demo)
+const dlg=$('checkout');let pending=null;
+function startCheckout(p){pending=p;$('ckAmt').textContent=`${p.coins.toLocaleString()} coins`;$('ckPrice').textContent=`₱${p.price}`;$('payBtn').textContent=`Pay ₱${p.price}`;dlg.showModal()}
+dlg.addEventListener('close',()=>{if(dlg.returnValue==='pay'&&pending){
+  // In production: create the payment on your server with your provider (e.g. PayMongo),
+  // and credit coins only after the provider's webhook confirms payment.
+  S.coins+=pending.coins;save();renderCoins();renderShop();toast(`Paid with ${dlg.querySelector('input[name=m]:checked').value} (demo). ${pending.coins.toLocaleString()} coins added.`)}
+  pending=null;dlg.returnValue=''});
+
+resize(true);renderSettings();renderCoins();renderWishes();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
