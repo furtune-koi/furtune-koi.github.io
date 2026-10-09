@@ -321,7 +321,8 @@ const cvs=document.getElementById('pond'),ctx=cvs.getContext('2d');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const hasFilter='filter' in ctx;
 // Phones: a live canvas blur every frame tanks the frame rate, so blur shadows by upscaling a quarter-size canvas instead.
-const lite=matchMedia('(pointer: coarse)').matches;
+let lite=matchMedia('(pointer: coarse)').matches,tier=lite?1:0;
+const showFps=/[?&]fps\b/.test(location.search);
 const shadow=document.createElement('canvas'),sctx=shadow.getContext('2d');
 const rnd=(a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
 let W=0,H=0,DPR=1,SC=1;
@@ -548,13 +549,17 @@ function landCoin(c){ripple(c.tx,c.ty,1.4);ripple(c.tx,c.ty,.9);for(const k of f
 const flies=Array.from({length:22},()=>({x:rnd(0,1),y:rnd(0,1),p:rnd(0,100)}));
 
 /* ---------- loop ---------- */
-let last=performance.now();
+let last=performance.now(),perf={t:0,n:0,skip:60},fps=0;
+// TVs and weak GPUs aren't touch devices, so drop quality based on measured frame time instead.
+function watchPerf(raw){if(raw>500)return;if(perf.skip>0){perf.skip--;return}perf.t+=raw;perf.n++;
+  if(perf.t<2000)return;const avg=perf.t/perf.n;fps=Math.round(1000/avg);perf={t:0,n:0,skip:30};
+  if((tier===0&&avg>25)||(tier===1&&avg>40)){tier++;lite=true;DPR=Math.min(devicePixelRatio||1,tier>1?1:1.5);cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}}
 function frame(now){requestAnimationFrame(frame);try{draw(now)}catch(e){console.error(e)}}
 function draw(now){
-  const dt=Math.min(now-last,100);last=now;
+  const raw=now-last,dt=Math.min(raw,250);last=now;watchPerf(raw);
   ctx.drawImage(floor,0,0,W,H);
   // slow light shimmer
-  if(!reduce&&S.settings.shimmer){ctx.globalCompositeOperation='lighter';for(let i=0;i<3;i++){const x=(Math.sin(now*.00007*(i+1)+i*2)*.4+.5)*W,y=(Math.cos(now*.00006*(i+2)+i)*.4+.45)*H,r=Math.max(W,H)*.25;
+  if(!reduce&&tier<2&&S.settings.shimmer){ctx.globalCompositeOperation='lighter';for(let i=0;i<3;i++){const x=(Math.sin(now*.00007*(i+1)+i*2)*.4+.5)*W,y=(Math.cos(now*.00006*(i+2)+i)*.4+.45)*H,r=Math.max(W,H)*.25;
     const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba(90,150,130,.06)');g.addColorStop(1,'rgba(90,150,130,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}ctx.globalCompositeOperation='source-over'}
   // coins on the floor
   for(const c of S.pondCoins){const x=c.x*W,y=c.y*H;drawCoin(x,y,7*SC,c.r,.5);const gl=Math.sin(now*.0012+c.x*40+c.y*30);if(gl>.97){ctx.fillStyle=`rgba(255,248,215,${(gl-.97)*25})`;ctx.beginPath();ctx.arc(x-2,y-2,2.2,0,7);ctx.fill()}}
@@ -581,11 +586,12 @@ function draw(now){
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.life-=dt;d.x+=d.vx*dt*.06;d.y+=d.vy*dt*.06;d.vy+=.006*dt;if(d.life<0){drops.splice(i,1);continue}ctx.fillStyle=`rgba(225,242,236,${d.life/500})`;ctx.beginPath();ctx.arc(d.x,d.y,1.8,0,7);ctx.fill()}
   for(let i=flying.length-1;i>=0;i--){const c=flying[i];c.t+=dt/c.dur;const k=Math.min(c.t,1);const x=c.sx+(c.tx-c.sx)*k,arc=Math.sin(k*Math.PI)*Math.min(260,H*.35),y=c.sy+(c.ty-c.sy)*k-arc,r=(26-13*k)*SC;
     ctx.fillStyle='rgba(6,20,18,.25)';ctx.beginPath();ctx.ellipse(x+arc*.15,c.sy+(c.ty-c.sy)*k,r*.8,r*.35,0,0,7);ctx.fill();drawCoin(x,y,r,c.tilt,1,k*14);if(k>=1){landCoin(c);flying.splice(i,1)}}
+  if(showFps){ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(8,8,150,26);ctx.fillStyle='#fff';ctx.font='13px monospace';ctx.fillText(`${fps||'…'} fps · tier ${tier} · ${DPR}x`,16,26)}
 }
 
 /* ---------- layout ---------- */
 let rt;
-function resize(first){DPR=Math.min(devicePixelRatio||1,lite?1.5:2);W=innerWidth;H=innerHeight;SC=clamp(Math.min(W,H)/800,.55,1.3);cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+function resize(first){DPR=Math.min(devicePixelRatio||1,tier>1?1:lite?1.5:2);W=innerWidth;H=innerHeight;SC=clamp(Math.min(W,H)/800,.55,1.3);cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
   shadow.width=Math.ceil(W/4);shadow.height=Math.ceil(H/4);
   buildFloor();makePads();if(first)spawnFish();else for(const k of fish){k.x=clamp(k.x,0,W);k.y=clamp(k.y,0,H)}}
 addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>resize(false),150)});
