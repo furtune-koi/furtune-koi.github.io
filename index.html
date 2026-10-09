@@ -192,6 +192,10 @@ dialog::backdrop{background:rgba(8,18,17,.6)}
 .demo-flag{background:rgba(227,180,76,.18);border-radius:10px;padding:.6rem .8rem;font-size:.82rem;line-height:1.5}
 .dlg-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}
 .dlg-actions .pay{background:var(--koi);color:#fff;font-weight:700}
+.dlg-actions button{border:1px solid var(--line)}.dlg-actions .pay{border-color:var(--koi)}.dlg-actions button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.dlg p{margin:.4rem 0 0;line-height:1.5;font-size:.92rem}
+.menu .care{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;padding-bottom:.4rem}
+.menu .care .act.danger{border-color:rgba(217,103,58,.6)}
 @media (prefers-reduced-motion:reduce){.sheet,.toast,.scrim,.menu,.pill{transition:none}}
 </style>
 </head>
@@ -227,6 +231,9 @@ dialog::backdrop{background:rgba(8,18,17,.6)}
   <section aria-labelledby="h-tmr"><h4 id="h-tmr">Timer</h4>
     <div class="timers"><button data-min="10" aria-pressed="false">10 mins</button><button data-min="15" aria-pressed="false">15 mins</button><button data-min="30" aria-pressed="false">30 mins</button><button data-min="60" aria-pressed="false">60 mins</button></div>
     <div class="meta" id="timerNote" style="padding-top:.6rem">Counting your time at the pond. Pick a length for a gentle bell when it ends.</div>
+  </section>
+  <section aria-labelledby="h-care"><h4 id="h-care">Pond care</h4>
+    <div class="care"><button class="act" id="cleanPond">Clean pond</button><button class="act danger" id="resetProg">Reset progress</button></div>
   </section>
 </div>
 
@@ -295,7 +302,7 @@ dialog::backdrop{background:rgba(8,18,17,.6)}
       <li><b>Android:</b> tap ⋮ in your browser, then <b>Install app</b>.</li>
       <li><b>iPhone (Safari):</b> tap Share, then <b>Add to Home Screen</b>.</li>
       <li>After your first visit it also works offline.</li></ul></div></details>
-    <details><summary>Is my progress saved?</summary><div><p>Yes, in this browser on this device. Clearing your browser data resets it. It is not synced across devices.</p></div></details>
+    <details><summary>Is my progress saved?</summary><div><p>Yes, in this browser on this device. Clearing your browser data resets it. It is not synced across devices. To tidy up, open Settings, then Pond care, and choose Clean pond (removes coins from the pond floor) or Reset progress (every koi goes back to Small).</p></div></details>
   </div>
 </aside>
 
@@ -310,6 +317,13 @@ dialog::backdrop{background:rgba(8,18,17,.6)}
     </div>
     <div class="demo-flag">Demo checkout. No money is charged — coins are added straight away so you can test the flow. A real payment provider plugs in here.</div>
     <div class="dlg-actions"><button value="cancel">Cancel</button><button value="pay" class="pay" id="payBtn">Pay ₱49</button></div>
+  </form>
+</dialog>
+
+<dialog id="confirm">
+  <form method="dialog" class="dlg">
+    <h2 id="cfTitle"></h2><p id="cfBody"></p>
+    <div class="dlg-actions"><button value="cancel" autofocus>Cancel</button><button value="ok" class="pay" id="cfOk"></button></div>
   </form>
 </dialog>
 
@@ -670,7 +684,7 @@ addEventListener('pointerdown',startAudio,{capture:true});addEventListener('keyd
 const menu=$('menu'),mb=$('menuBtn');
 function toggleMenu(open){open=open??!menu.classList.contains('open');menu.classList.toggle('open',open);mb.setAttribute('aria-expanded',open)}
 mb.onclick=e=>{e.stopPropagation();toggleMenu()};
-document.addEventListener('pointerdown',e=>{if(menu.classList.contains('open')&&!menu.contains(e.target)&&e.target!==mb&&!mb.contains(e.target)&&e.target!==cvs)toggleMenu(false)});
+document.addEventListener('pointerdown',e=>{if(menu.classList.contains('open')&&!menu.contains(e.target)&&!cfd.open&&e.target!==mb&&!mb.contains(e.target)&&e.target!==cvs)toggleMenu(false)});
 function setSwitch(el,on){el.setAttribute('aria-checked',on)}
 $('soundRows').innerHTML=SOUND_LIST.map(([k,l])=>`<div class="srow" data-row="${k}"><span class="lbl">${l}</span><input type="range" min="0" max="100" step="1" data-vol="${k}" aria-label="${l} volume"><button class="switch" role="switch" data-snd="${k}" aria-label="${l}"></button></div>`).join('');
 function renderSettings(){const st=S.settings;
@@ -689,6 +703,16 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)retur
   if(b.dataset.min){setTimer(+b.dataset.min);return}
   const a=b.dataset.act;if(!a)return;toggleMenu(false);
   if(a==='throw'||a==='feed')setMode(a);if(a==='shop')openShop();if(a==='topup')openShop('coins')});
+
+const cfd=$('confirm');
+function askConfirm(title,body,ok){return new Promise(r=>{$('cfTitle').textContent=title;$('cfBody').textContent=body;$('cfOk').textContent=ok;cfd.returnValue='cancel';cfd.addEventListener('close',()=>r(cfd.returnValue==='ok'),{once:true});cfd.showModal()})}
+cfd.addEventListener('click',e=>{if(e.target===cfd)cfd.close('cancel')});
+$('cleanPond').onclick=async()=>{const n=S.pondCoins.length+sinking.length;if(!n){toast('The pond is already clean.');return}
+  if(!await askConfirm('Clean the pond?',`This removes all ${n.toLocaleString()} ${n===1?'coin':'coins'} from the pond floor. Your wallet coins are not affected. This can't be undone.`,'Clean pond'))return;
+  S.pondCoins=[];sinking.length=0;save();renderWishes();toast('The pond is clean.')};
+$('resetProg').onclick=async()=>{
+  if(!await askConfirm('Reset koi progress?',"Every koi goes back to Small and food eaten is set to 0. Extra Large rewards can be earned again. Your coins and koi are kept. This can't be undone.",'Reset'))return;
+  for(const k in S.growth)S.growth[k]=S.growth[k].map(()=>0);S.xlPaid={};spawnFish();save();if($('sheet').classList.contains('open'))renderShop();renderProgress();toast('Koi progress reset. Every koi starts Small again.')};
 
 /* ---------- timer ---------- */
 let T={mode:'up',start:Date.now(),end:0,dur:0};
@@ -732,7 +756,7 @@ const sheet=$('sheet'),scrim=$('scrim');
 function openShop(tab='items'){renderShop();syncTabs();switchTab(tab);sheet.classList.add('open');scrim.classList.add('open');setTimeout(()=>$('closeShop').focus(),50)}
 function closeShop(){sheet.classList.remove('open');scrim.classList.remove('open')}
 $('closeShop').onclick=closeShop;scrim.onclick=closeShop;
-addEventListener('keydown',e=>{if(e.key==='Escape'){closeShop();toggleMenu(false)}});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!cfd.open){closeShop();toggleMenu(false)}});
 let curTab='items';
 function switchTab(t){if(t==='progress'&&!v2())t='items';curTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));document.querySelectorAll('.sheet-body').forEach(p=>p.hidden=p.id!=='tab-'+t)}
 function syncTabs(){$('tabBtnProgress').hidden=!v2();if(curTab==='progress'&&!v2())switchTab('items')}
