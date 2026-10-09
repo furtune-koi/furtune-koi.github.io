@@ -90,6 +90,8 @@ input[type=range]:active::-moz-range-thumb,input[type=range]:focus-visible::-moz
 input[type=range]:focus-visible{outline:none}
 input[type=range]:focus-visible::-webkit-slider-runnable-track{background:rgba(241,237,226,.45)}
 .srow.off input[type=range]{opacity:.45}
+.ver{max-width:9.6rem;font:inherit;font-size:.85rem;color:var(--paper);background:rgba(241,237,226,.1);border:1px solid var(--glass-line);border-radius:999px;padding:.4rem .7rem;cursor:pointer}
+.ver option{color:var(--ink);background:var(--paper)}
 .switch{position:relative;width:46px;height:26px;padding:0;border-radius:999px;background:rgba(241,237,226,.16);flex:none;transition:background .2s}
 .switch::after{content:"";position:absolute;left:4px;top:4px;width:18px;height:18px;border-radius:50%;background:#c9cfcd;transition:transform .2s,background .2s}
 .switch[aria-checked="true"]{background:#8a5a32}
@@ -129,7 +131,7 @@ input[type=range]:focus-visible::-webkit-slider-runnable-track{background:rgba(2
 .sheet .bal{display:flex;align-items:center;gap:.4rem;font-weight:500;margin-left:auto;margin-right:.6rem}
 .sheet .close{padding:.4rem .7rem;color:var(--muted);font-size:1.4rem;line-height:1}
 .tabs{display:flex;padding:0 1.4rem;border-bottom:1px solid var(--line)}
-.tabs button{border-radius:0;padding:.7rem .1rem;margin-right:1.2rem;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button{border-radius:0;padding:.7rem .1rem;margin-right:.9rem;color:var(--muted);border-bottom:2px solid transparent}
 .tabs button[aria-selected="true"]{color:var(--panel-ink);border-bottom-color:var(--koi)}
 .sheet-body{overflow-y:auto;padding:.6rem 1.4rem 2rem;flex:1}
 .sheet-body h3{font-family:var(--serif);font-weight:500;font-size:1.05rem;margin:1.2rem 0 .3rem;color:var(--muted)}
@@ -157,6 +159,24 @@ input[type=range]:focus-visible::-webkit-slider-runnable-track{background:rgba(2
 .pack.best{border:2px solid var(--gold)}
 .pack .amt{font-family:var(--serif);font-size:1.35rem;font-weight:700;display:flex;align-items:center;gap:.45rem}
 .pack small{color:var(--muted);display:block;margin-top:.15rem}
+.pg-sum{font-weight:500;margin:.9rem 0 .1rem}.pg-hint{font-size:.85rem;color:var(--muted);margin:0 0 .6rem}
+.pg-card{border:1px solid var(--line);border-radius:14px;padding:.8rem .9rem;margin:.7rem 0}
+.pg-head{display:flex;align-items:center;gap:.7rem;margin-bottom:.4rem}.pg-head .swatch{width:44px;height:44px}.pg-head strong{font-weight:500}
+.pg-row{padding:.45rem 0;border-top:1px solid var(--line)}
+.pg-top{display:flex;justify-content:space-between;gap:.6rem;font-size:.85rem}.pg-top small{color:var(--muted);text-align:right}
+.pg-tag{font-size:.7rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 .4rem;margin-left:.3rem}
+.pg-bar{height:6px;border-radius:3px;background:var(--line);margin-top:.35rem;overflow:hidden}.pg-bar i{display:block;height:100%;background:var(--koi)}.pg-bar.xl i{background:var(--gold)}
+.faq h3{margin:1.4rem 0 .4rem}.faq h3:first-child{margin-top:.6rem}
+.faq details{border:1px solid var(--line);border-radius:12px;margin:.45rem 0;padding:0 .9rem}
+.faq summary{cursor:pointer;padding:.7rem 0;font-weight:500;list-style:none;display:flex;justify-content:space-between;gap:.6rem}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--koi);font-weight:700}
+.faq details[open] summary::after{content:"\2212"}
+.faq details[open]{border-color:var(--koi)}
+.faq details>div{padding:0 0 .8rem;font-size:.9rem;line-height:1.55}
+.faq p{margin:.4rem 0}.faq ol,.faq ul{margin:.4rem 0;padding-left:1.2rem}.faq li{margin:.25rem 0}
+.faq table{width:100%;border-collapse:collapse;margin:.5rem 0;font-size:.85rem}.faq td,.faq th{text-align:left;padding:.3rem .2rem;border-top:1px solid var(--line)}.faq th{color:var(--muted);font-weight:500;border-top:0}
+.faq .gold{color:#a87a1f;font-weight:500}
 .note{font-size:.82rem;color:var(--muted);line-height:1.55;margin-top:1rem}
 
 dialog{border:0;border-radius:18px;padding:0;width:min(380px,92vw);background:var(--panel);color:var(--panel-ink)}
@@ -196,6 +216,9 @@ dialog::backdrop{background:rgba(8,18,17,.6)}
     <div id="soundRows"></div>
     <div class="srow two"><span class="lbl">Mute all</span><button class="switch" role="switch" id="muteAll" aria-checked="false" aria-label="Mute all sounds"></button></div>
   </section>
+  <section aria-labelledby="h-gm"><h4 id="h-gm">Game</h4>
+    <div class="srow two"><label class="lbl" for="ver">Game Mode Version</label><select class="ver" id="ver"><option value="1">Version 1 — Relax</option><option value="2">Version 2 — Normal</option></select></div>
+  </section>
   <section aria-labelledby="h-vis"><h4 id="h-vis">Visuals</h4>
     <div class="srow two"><span class="lbl">Light shimmer</span><button class="switch" role="switch" data-vis="shimmer" aria-label="Light shimmer"></button></div>
     <div id="setupRows"></div>
@@ -220,9 +243,60 @@ dialog::backdrop{background:rgba(8,18,17,.6)}
   <div class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-tab="items">Spend coins</button>
     <button role="tab" aria-selected="false" data-tab="coins">Buy coins</button>
+    <button role="tab" aria-selected="false" data-tab="progress" id="tabBtnProgress" hidden>Progress</button>
+    <button role="tab" aria-selected="false" data-tab="faq">FAQ</button>
   </div>
   <div class="sheet-body" id="tab-items"></div>
   <div class="sheet-body" id="tab-coins" hidden></div>
+  <div class="sheet-body" id="tab-progress" hidden></div>
+  <div class="sheet-body faq" id="tab-faq" hidden>
+    <h3>The basics</h3>
+    <details open><summary>What is Still Water?</summary><div><p>A calm koi pond for a quiet minute. Watch the koi, listen to the water, and make a wish. There is nothing to win and no rush.</p></div></details>
+    <details><summary>How to play</summary><div><ol>
+      <li>Tap the water to make ripples. Nearby koi may dart away.</li>
+      <li>Tap <b>Throw coin</b>, then tap the water to make a wish. It costs 1 coin.</li>
+      <li>Tap <b>Feed koi</b>, then tap the water to drop food for the koi.</li>
+      <li>Tap <b>Shop</b> to add koi and pond extras.</li>
+      <li>Tap the <b>…</b> button at the bottom right for settings. Tap <b>Done</b> when you finish throwing or feeding.</li>
+    </ol></div></details>
+    <details><summary>Game modes</summary><div>
+      <p><b>Version 1 — Relax:</b> a gentle pond. Koi stay the same size.</p>
+      <p><b>Version 2 — Normal:</b> koi grow when you feed them, and the shop gets a Progress tab.</p>
+      <p>Switch in <b>… → Game → Game Mode Version</b>. Your coins and koi are kept when you switch.</p>
+    </div></details>
+    <details><summary>How do koi grow? (Version 2)</summary><div>
+      <p>Each koi grows by eating food. Every piece it eats counts for that koi.</p>
+      <table><tr><th>Size</th><th>Food eaten</th></tr><tr><td>Small</td><td>0–19</td></tr><tr><td>Medium</td><td>20–59</td></tr><tr><td>Large</td><td>60–119</td></tr><tr><td>Extra Large</td><td>120 or more</td></tr></table>
+      <ul><li>Each tap of Feed costs 1 coin and drops 5 pieces of food.</li>
+      <li>Small koi dart faster and notice food from farther away.</li>
+      <li>A message appears when a koi levels up.</li>
+      <li>A koi that reaches Extra Large earns <b>+10 coins</b>, once per koi, and gets a <span class="gold">gold shimmer</span>.</li>
+      <li>See every koi's progress in the <b>Progress</b> tab.</li></ul>
+    </div></details>
+    <h3>Coins and koi</h3>
+    <details><summary>Coins</summary><div><ul>
+      <li>You start with 20 coins.</li>
+      <li>Throwing a coin or tapping Feed costs 1 coin each.</li>
+      <li>Koi and pond extras are bought in the <b>Spend coins</b> tab. Kohaku and Tancho are free. Ogon is 40, Showa 60, Kujaku 80, Chagoi 50. Lotus flowers are 25, Soft rain 40, Evening 60.</li>
+      <li>In Version 2, an Extra Large koi gives +10 coins once.</li>
+      <li><b>Buy coins</b> is a demo. No real money is charged and the coins are added straight away.</li></ul></div></details>
+    <details><summary>Koi and pond extras</summary><div><ul>
+      <li>You can own up to 5 of each koi variety.</li>
+      <li>Tap <b>−</b> to hide a koi. You keep it. Tap <b>+</b> to bring it back for free.</li>
+      <li>Extras you own can be switched on and off in the shop or in <b>… → Visuals</b>.</li></ul></div></details>
+    <h3>Sound and time</h3>
+    <details><summary>Timer and sounds</summary><div><ul>
+      <li>The timer at the top counts up the time you spend at the pond. Tap it to open settings.</li>
+      <li>Pick 10, 15, 30 or 60 mins in the settings to hear a gentle bell when time is up. The timer then counts down. Tap the same length again to clear it.</li>
+      <li>Sound starts after your first tap.</li>
+      <li>Each sound has a slider and a switch. <b>Mute all</b> silences everything.</li></ul></div></details>
+    <h3>Your device</h3>
+    <details><summary>Install on your phone</summary><div><ul>
+      <li><b>Android:</b> tap ⋮ in your browser, then <b>Install app</b>.</li>
+      <li><b>iPhone (Safari):</b> tap Share, then <b>Add to Home Screen</b>.</li>
+      <li>After your first visit it also works offline.</li></ul></div></details>
+    <details><summary>Is my progress saved?</summary><div><p>Yes, in this browser on this device. Clearing your browser data resets it. It is not synced across devices.</p></div></details>
+  </div>
 </aside>
 
 <dialog id="checkout">
@@ -257,15 +331,16 @@ const floor=document.createElement('canvas'),fctx=floor.getContext('2d');
 const KEY='stillwater:v2';
 const defaults={coins:20,koi:{kohaku:{owned:4,shown:4},tancho:{owned:2,shown:2}},extras:['blooms'],extrasOff:[],pondCoins:[]};
 const SOUND_LIST=[['music','Music'],['wind','Wind'],['birds','Birds'],['chimes','Chimes'],['crickets','Crickets'],['stream','Stream'],['rain','Rain']];
-const defaultSettings={muted:false,shimmer:true,showUi:true,snd:{music:{on:true,vol:.6},wind:{on:true,vol:.35},birds:{on:true,vol:.3},chimes:{on:false,vol:.35},crickets:{on:false,vol:.3},stream:{on:true,vol:.3},rain:{on:false,vol:.4}}};
+const defaultSettings={version:1,muted:false,shimmer:true,showUi:true,snd:{music:{on:true,vol:.6},wind:{on:true,vol:.35},birds:{on:true,vol:.3},chimes:{on:false,vol:.35},crickets:{on:false,vol:.3},stream:{on:true,vol:.3},rain:{on:false,vol:.4}}};
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY));if(!S){const old=JSON.parse(localStorage.getItem('stillwater:v1')||'null');S=old?{...defaults,coins:old.coins??20,pondCoins:old.pondCoins||[]}:null}}catch(e){S=null}
 S={...defaults,...(S||{})};
 // migrate older saves (list of active koi) to per-variety counts
 if(S.active&&!(S.koi&&S.koi!==defaults.koi&&Object.keys(S.koi).length)){const k={};for(const v of S.active){k[v]=k[v]||{owned:0,shown:0};k[v].owned=Math.min(5,k[v].owned+1);k[v].shown=k[v].owned}S.koi=k;delete S.active;delete S.owned}
-S.koi=JSON.parse(JSON.stringify(S.koi));S.extrasOff=S.extrasOff||[];
+S.koi=JSON.parse(JSON.stringify(S.koi));S.extrasOff=S.extrasOff||[];S.growth=S.growth||{};S.xlPaid=S.xlPaid||{};
 S.settings={...defaultSettings,...(S.settings||{}),snd:{...defaultSettings.snd,...((S.settings||{}).snd||{})}};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let saveT;const saveSoon=()=>{clearTimeout(saveT);saveT=setTimeout(save,800)};addEventListener('pagehide',save);
 
 /* ---------- catalogue ---------- */
 const VARIETIES={
@@ -290,6 +365,10 @@ const PACKS=[{coins:100,price:49,label:'A handful'},{coins:550,price:249,label:'
 const MAX_EACH=5;
 const isOn=k=>S.extras.includes(k)&&!S.extrasOff.includes(k);
 const kc=k=>S.koi[k]||(S.koi[k]={owned:0,shown:0});
+const LV=[{n:'Small',s:.45,at:0,ch:1.5,det:1.4},{n:'Medium',s:.65,at:20,ch:1.3,det:1.25},{n:'Large',s:.85,at:60,ch:1.15,det:1.1},{n:'Extra Large',s:1,at:120,ch:1,det:1}];
+const lvlOf=f=>{let l=0;while(l<3&&f>=LV[l+1].at)l++;return l};
+const G=k=>{const a=S.growth[k]||(S.growth[k]=[]);while(a.length<kc(k).owned)a.push(0);return a};
+const v2=()=>S.settings.version==2;
 
 /* ---------- pond floor (stone tiles) ---------- */
 function buildFloor(){
@@ -323,9 +402,11 @@ function buildFloor(){
 const PROF=[[0,.62],[.05,.8],[.15,.96],[.3,1],[.46,.95],[.6,.82],[.74,.6],[.87,.38],[1,.22]];
 function prof(t){for(let i=1;i<PROF.length;i++){if(t<=PROF[i][0]){const a=PROF[i-1],b=PROF[i];return lerp(a[1],b[1],(t-a[0])/(b[0]-a[0]))}}return .15}
 class Koi{
-  constructor(v){
+  constructor(v,i=0){
     this.key=v;this.v=VARIETIES[v];this.depth=rnd(.78,.9);this.goal=null;
     this.len=rnd(.8,1.1)*Math.max(W,H)*.18;this.len=clamp(this.len,110,360);
+    this.g=v2();this.idx=i;this.full=this.len;
+    if(this.g){this.lvl=lvlOf(G(v)[i]);this.len=Math.max(40,this.full*LV[this.lvl].s);this.l0=this.l1=this.len;this.gt=1;this.dart=0;this.nextDart=this.lvl===0?rnd(6000,10000):rnd(15000,20000)}
     this.n=16;this.gap=this.len*.74/(this.n-1);
     this.x=rnd(.12,.88)*W;this.y=rnd(.12,.88)*H;
     this.a=Math.atan2(H/2-this.y,W/2-this.x)+rnd(-.8,.8);
@@ -337,15 +418,26 @@ class Koi{
   }
   w(t){return this.len*.14*prof(t)}
   startle(x,y){const d=Math.hypot(this.x-x,this.y-y);if(d<this.len*1.1){this.fleeA=Math.atan2(this.y-y,this.x-x);this.flee=900;this.speed=Math.max(this.speed,1.9)}}
+  grow(dt){
+    const f=S.growth[this.key][this.idx],l=lvlOf(f);
+    if(l!==this.lvl){const up=l>this.lvl,nm=this.v.name;this.lvl=l;this.l0=this.len;this.l1=Math.max(40,this.full*LV[l].s);this.gt=0;
+      if(up){ripple(this.x,this.y,1);const k=`${this.key}:${this.idx}`;
+        if(l===3&&!S.xlPaid[k]){S.xlPaid[k]=1;S.coins+=10;renderCoins();save();toast(`Your ${nm} grew to Extra Large! +10 coins`)}
+        else toast(`Your ${nm} grew to ${LV[l].n}!`)}}
+    if(this.gt<1){this.gt=Math.min(1,this.gt+dt/1500);const e=this.gt*this.gt*(3-2*this.gt);this.len=lerp(this.l0,this.l1,e)}
+    this.gap=this.len*.74/(this.n-1)}
   update(dt){
     this.t+=dt*.001;
-    let target=null,best=1e9;
-    for(const p of pellets){const d=Math.hypot(p.x-this.x,p.y-this.y);if(d<best&&d<480*SC){best=d;target=p}}
+    if(this.g)this.grow(dt);
+    let target=null,best=1e9;const R=480*SC*(this.g?LV[this.lvl].det:1);
+    for(const p of pellets){const d=Math.hypot(p.x-this.x,p.y-this.y);if(d<best&&d<R){best=d;target=p}}
     let desired,steer;
-    if(target){desired=Math.atan2(target.y-this.y,target.x-this.x);this.speed=Math.min(this.speed+.02*dt/16,1.5);steer=.06;if(best<this.len*.08)target.eaten=true}
+    if(target){desired=Math.atan2(target.y-this.y,target.x-this.x);this.speed=Math.min(this.speed+.02*dt/16,1.5);steer=.06;this.dart=0;
+      if(best<(this.g?this.full:this.len)*.08&&!target.eaten){target.eaten=true;if(this.g){S.growth[this.key][this.idx]++;saveSoon();refreshProgress()}}}
     else{
       desired=this.a+(Math.sin(this.t*.29+this.sd)*.6+Math.sin(this.t*.11+this.sd*1.7)*.4)*.5;steer=.012;
-      this.speed+=(this.base-this.speed)*Math.min(1,.01*dt/16);
+      if(this.g&&this.lvl<2&&this.flee<=0&&(this.nextDart-=dt)<=0){this.dart=rnd(600,1200);this.speed=rnd(1.6,2);this.nextDart=this.lvl===0?rnd(6000,10000):rnd(15000,20000)}
+      if(this.dart>0)this.dart-=dt;else this.speed+=(this.base-this.speed)*Math.min(1,.01*dt/16);
       const pad=Math.min(W,H)*.04;
       if(!this.goal&&(this.x<pad||this.x>W-pad||this.y<pad||this.y>H-pad))this.goal={x:rnd(.2,.8)*W,y:rnd(.2,.8)*H};
       if(this.goal){desired=Math.atan2(this.goal.y-this.y,this.goal.x-this.x);steer=.028;
@@ -354,7 +446,7 @@ class Koi{
     if(this.flee>0){this.flee-=dt;desired=this.fleeA;steer=.07}
     const da=((desired-this.a+Math.PI*3)%(Math.PI*2))-Math.PI;this.a+=clamp(da*steer,-.035,.035)*dt/16;
     // Scale by body length, not screen size, so koi cover the same body-lengths per second on every device.
-    const sp=this.speed*dt*.06*(this.len/230)*(reduce?.5:1);
+    const sp=this.speed*dt*.06*((this.g?this.full:this.len)/230)*(this.g&&target?LV[this.lvl].ch:1)*(reduce?.5:1);
     this.x+=Math.cos(this.a)*sp;this.y+=Math.sin(this.a)*sp;
     const s=this.seg;s[0].x=this.x;s[0].y=this.y;
     this.ph+=dt*.001*(1.6+this.speed*1.6)*(reduce?.4:1);
@@ -411,6 +503,7 @@ class Koi{
     // belly shading
     ctx.strokeStyle='rgba(0,0,0,.12)';ctx.lineWidth=W0*.5;ctx.stroke(g.path);
     ctx.restore();
+    if(this.g&&this.lvl===3){ctx.globalCompositeOperation='lighter';const pu=.5+.5*Math.sin(this.t*1.4+this.ph);ctx.fillStyle='#e3b44c';ctx.globalAlpha=this.depth*(.07+.07*pu);ctx.fill(g.path);ctx.strokeStyle='#ffd36a';ctx.lineWidth=Math.max(2,this.len*.012);ctx.globalAlpha=this.depth*(.25+.2*pu);ctx.stroke(g.path);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=this.depth}
     // eyes
     const h=this.at(.06,g),ew=this.w(.06)*.6;ctx.fillStyle='#141716';
     for(const sd of[-1,1]){ctx.beginPath();ctx.arc(h.x+Math.cos(h.a+sd*Math.PI/2)*ew,h.y+Math.sin(h.a+sd*Math.PI/2)*ew,Math.max(1.6,this.len*.014),0,7);ctx.fill()}
@@ -442,7 +535,7 @@ function drawPad(p,now){
   ctx.restore()}
 
 /* ---------- effects ---------- */
-let fish=[];function spawnFish(){fish=[];for(const [k,c] of Object.entries(S.koi))if(VARIETIES[k])for(let i=0;i<c.shown;i++)fish.push(new Koi(k))}
+let fish=[];function spawnFish(){fish=[];for(const [k,c] of Object.entries(S.koi))if(VARIETIES[k])for(let i=0;i<c.shown;i++)fish.push(new Koi(k,i))}
 const ripples=[],pellets=[],flying=[],sinking=[],drops=[];
 function ripple(x,y,big=1){ripples.push({x,y,r:2*SC,a:.5*big,big})}
 function drawCoin(x,y,r,tilt,alpha=1,spin=0){
@@ -569,11 +662,12 @@ function setSwitch(el,on){el.setAttribute('aria-checked',on)}
 $('soundRows').innerHTML=SOUND_LIST.map(([k,l])=>`<div class="srow" data-row="${k}"><span class="lbl">${l}</span><input type="range" min="0" max="100" step="1" data-vol="${k}" aria-label="${l} volume"><button class="switch" role="switch" data-snd="${k}" aria-label="${l}"></button></div>`).join('');
 function renderSettings(){const st=S.settings;
   for(const [k] of SOUND_LIST){const x=st.snd[k];menu.querySelector(`[data-vol="${k}"]`).value=Math.round(x.vol*100);setSwitch(menu.querySelector(`[data-snd="${k}"]`),x.on);menu.querySelector(`[data-row="${k}"]`).classList.toggle('off',!x.on)}
-  setSwitch($('muteAll'),st.muted);
+  setSwitch($('muteAll'),st.muted);$('ver').value=st.version;
   $('setupRows').innerHTML=Object.entries(EXTRAS).filter(([k])=>S.extras.includes(k)).map(([k,v])=>`<div class="srow two"><span class="lbl">${v.name}</span><button class="switch" role="switch" data-xt="${k}" aria-checked="${isOn(k)}" aria-label="Show ${v.name}"></button></div>`).join('');
   menu.querySelectorAll('[data-vis]').forEach(b=>setSwitch(b,!!st[b.dataset.vis]));
   document.body.classList.toggle('hidden-ui',!st.showUi);if(!st.showUi)$('title').classList.add('gone')}
 menu.addEventListener('input',e=>{const k=e.target.dataset.vol;if(!k)return;const x=S.settings.snd[k];x.vol=e.target.value/100;if(x.vol>0&&!x.on){x.on=true;renderSettings()}applyAudio();save()});
+menu.addEventListener('change',e=>{if(e.target.id!=='ver')return;S.settings.version=+e.target.value===2?2:1;save();spawnFish();if($('sheet').classList.contains('open'))renderShop();syncTabs()});
 menu.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const st=S.settings;
   if(b.dataset.snd){const x=st.snd[b.dataset.snd];x.on=!x.on;if(x.on&&x.vol===0)x.vol=.3;startAudio();applyAudio();renderSettings();save();return}
   if(b.id==='muteAll'){st.muted=!st.muted;applyAudio();renderSettings();save();return}
@@ -622,11 +716,15 @@ cvs.addEventListener('pointerdown',e=>{
 
 // shop
 const sheet=$('sheet'),scrim=$('scrim');
-function openShop(tab='items'){renderShop();switchTab(tab);sheet.classList.add('open');scrim.classList.add('open');setTimeout(()=>$('closeShop').focus(),50)}
+function openShop(tab='items'){renderShop();syncTabs();switchTab(tab);sheet.classList.add('open');scrim.classList.add('open');setTimeout(()=>$('closeShop').focus(),50)}
 function closeShop(){sheet.classList.remove('open');scrim.classList.remove('open')}
 $('closeShop').onclick=closeShop;scrim.onclick=closeShop;
 addEventListener('keydown',e=>{if(e.key==='Escape'){closeShop();toggleMenu(false)}});
-function switchTab(t){document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));$('tab-items').hidden=t!=='items';$('tab-coins').hidden=t!=='coins'}
+let curTab='items';
+function switchTab(t){if(t==='progress'&&!v2())t='items';curTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));document.querySelectorAll('.sheet-body').forEach(p=>p.hidden=p.id!=='tab-'+t)}
+function syncTabs(){$('tabBtnProgress').hidden=!v2();if(curTab==='progress'&&!v2())switchTab('items')}
+let pgT=0;
+function refreshProgress(){if(curTab!=='progress'||!sheet.classList.contains('open')||pgT)return;pgT=setTimeout(()=>{pgT=0;renderProgress()},500)}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 const coinSvg='<span class="coin-dot" aria-hidden="true"></span>';
 function koiSwatch(k){const v=VARIETIES[k],p=v.patches[0];return `<span class="swatch"><svg width="40" height="40" viewBox="0 0 40 40"><path d="M29 20 L38 13 L35 20 L38 27Z" fill="${v.fin}" opacity=".7"/><ellipse cx="17" cy="20" rx="13" ry="6.2" fill="${v.base}"/>${p?`<ellipse cx="17" cy="19" rx="4.5" ry="3.2" fill="${p[0]}"/>`:''}${v.crown?`<circle cx="8" cy="20" r="2.8" fill="${v.crown}"/>`:''}</svg></span>`}
@@ -646,15 +744,26 @@ function renderShop(){
   $('tab-items').innerHTML=h;
   let c='';for(const p of PACKS)c+=`<div class="pack ${p.best?'best':''}"><div><span class="amt">${coinSvg}${p.coins.toLocaleString()}</span><small>${p.label}</small></div><button class="btn-gold" data-pack="${p.coins}">₱${p.price}</button></div>`;
   c+='<p class="note">Coins can be thrown into the pond, or spent on food, new koi and pond extras. Purchases here are a demo and charge nothing.</p>';
-  $('tab-coins').innerHTML=c;
+  $('tab-coins').innerHTML=c;renderProgress();
+}
+function renderProgress(){
+  let n=0,xl=0,h='';
+  for(const [k,v] of Object.entries(VARIETIES)){const c=kc(k);if(!c.owned)continue;
+    const rows=G(k).slice(0,c.owned).map((f,i)=>{const l=lvlOf(f);n++;if(l===3)xl++;
+      const tag=i<c.shown?'':'<span class="pg-tag">resting</span>';
+      const info=l<3?`${f} / ${LV[l+1].at} to ${LV[l+1].n}`:`Extra Large ★${S.xlPaid[`${k}:${i}`]?' · +10 coins earned':''}`;
+      const pct=l<3?Math.round((f-LV[l].at)/(LV[l+1].at-LV[l].at)*100):100;
+      return `<div class="pg-row"><div class="pg-top"><span>#${i+1} ${LV[l].n}${tag}</span><small>${info}</small></div><div class="pg-bar${l===3?' xl':''}"><i style="width:${pct}%"></i></div></div>`}).join('');
+    h+=`<div class="pg-card"><div class="pg-head">${koiSwatch(k)}<strong>${v.name}</strong></div>${rows}</div>`}
+  $('tab-progress').innerHTML=n?`<p class="pg-sum">${n} koi${xl?` · ${xl} Extra Large`:''}</p><p class="pg-hint">Feed koi to help them grow. Small koi dart faster to food.</p>${h}`:'<p class="pg-sum">No koi yet</p><p class="pg-hint">Add a koi from the Spend coins tab, then feed it to watch it grow.</p>';
 }
 function toggleExtra(k){const off=S.extrasOff;const i=off.indexOf(k);if(i>=0)off.splice(i,1);else off.push(k);save();renderShop();renderSettings()}
 sheet.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.buy){const k=b.dataset.buy,v=VARIETIES[k],c=kc(k);
     if(c.owned>=MAX_EACH){toast(`You already have ${MAX_EACH} ${v.name}.`);return}if(S.coins<v.price){toast('Not enough coins. Get more in the Buy coins tab.');return}
-    S.coins-=v.price;c.owned++;c.shown++;fish.push(new Koi(k));renderCoins();save();renderShop();
+    S.coins-=v.price;c.owned++;c.shown++;G(k);fish.push(new Koi(k,c.shown-1));renderCoins();save();renderShop();
     toast(c.owned>=MAX_EACH?`You now have all ${MAX_EACH} ${v.name}.`:(v.price?`You bought a ${v.name}. It joined your pond.`:`A ${v.name} joined your pond.`))}
-  if(b.dataset.plus){const k=b.dataset.plus,c=kc(k);if(c.shown>=c.owned)return;c.shown++;fish.push(new Koi(k));save();renderShop();toast(`${VARIETIES[k].name} is back in your pond.`)}
+  if(b.dataset.plus){const k=b.dataset.plus,c=kc(k);if(c.shown>=c.owned)return;c.shown++;fish.push(new Koi(k,c.shown-1));save();renderShop();toast(`${VARIETIES[k].name} is back in your pond.`)}
   if(b.dataset.minus){const k=b.dataset.minus,c=kc(k);if(!c.shown)return;c.shown--;
     for(let i=fish.length-1;i>=0;i--)if(fish[i].key===k){fish.splice(i,1);break}
     save();renderShop();toast(`One ${VARIETIES[k].name} hidden. Tap + to bring it back for free.`)}
