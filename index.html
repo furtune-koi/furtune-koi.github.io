@@ -332,7 +332,7 @@ dialog::backdrop{background:rgba(8,18,17,.6)}
 
 <script>
 (()=>{
-const cvs=document.getElementById('pond'),ctx=cvs.getContext('2d');
+let cvs=document.getElementById('pond'),ctx=cvs.getContext('2d');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const hasFilter='filter' in ctx;
 // Phones: a live canvas blur every frame tanks the frame rate, so blur shadows by upscaling a quarter-size canvas instead.
@@ -575,13 +575,26 @@ function watchPerf(raw){if(document.hidden||raw>3000)return;if(performance.now()
   perf.t+=raw;perf.n++;if(perf.t<1500||perf.n<3)return;const avg=perf.t/perf.n;fps=Math.round(1000/avg);perf={t:0,n:0,wait:0,slow:0};
   if((tier===0&&avg>25)||(tier===1&&avg>40)||(tier===2&&avg>55))dropTier()}
 let rafAt=performance.now(),kicking=false,lastErr='';
-function step(){try{draw(performance.now())}catch(e){lastErr=String(e&&e.message||e).slice(0,60);console.error(e)}}
+let drawn=0;
+function step(){drawn++;try{draw(performance.now())}catch(e){lastErr=String(e&&e.message||e).slice(0,60);console.error(e)}}
 function frame(){rafAt=performance.now();requestAnimationFrame(frame);step()}
 // Some TV browsers stop firing rAF (screen saver, input switch) and never resume; keep the pond moving on timers until rAF is back.
 function kick(){if(document.hidden||performance.now()-rafAt<500){kicking=false;return}step();setTimeout(kick,33)}
 setInterval(()=>{if(!kicking&&!document.hidden&&performance.now()-rafAt>1500){kicking=true;requestAnimationFrame(frame);kick()}},1000);
 // TVs drop canvas memory under pressure; when it comes back, redraw the floor and go lighter so it doesn't happen again.
 cvs.addEventListener('contextrestored',()=>{if(tier<3)dropTier();else ctx.setTransform(DPR,0,0,DPR,0,0);buildFloor()});
+// Android Chrome can drop a canvas's GPU memory and never restore it, leaving a frozen picture; swap in a fresh canvas instead.
+let lostAt=0,swaps=0;
+function freshCanvas(){const c=document.createElement('canvas');c.id=cvs.id;c.className=cvs.className;for(const a of cvs.getAttributeNames())if(a!=='id'&&a!=='class'&&a!=='width'&&a!=='height')c.setAttribute(a,cvs.getAttribute(a));
+  c.addEventListener('pointerdown',onPondDown);watchLoss(c);cvs.replaceWith(c);cvs=c;ctx=c.getContext('2d');lostAt=0;swaps++;
+  if(tier<3)dropTier();else{cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}buildFloor()}
+function watchLoss(c){c.addEventListener('contextlost',()=>{lostAt=performance.now()})}
+watchLoss(cvs);
+setInterval(()=>{if(document.hidden)return;const lost=ctx.isContextLost&&ctx.isContextLost();
+  if(lost&&!lostAt)lostAt=performance.now();if(lostAt&&(!lost||performance.now()-lostAt<1500)){if(!lost)lostAt=0;return}if(lost||lostAt)freshCanvas()},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ctx.isContextLost&&ctx.isContextLost())freshCanvas()});
+if(showFps){const box=document.createElement('div');box.style.cssText='position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:99;padding:4px 8px;background:rgba(0,0,0,.6);color:#fff;font:12px/1.4 monospace;pointer-events:none;max-width:calc(100vw - 16px)';document.body.appendChild(box);
+  setInterval(()=>{const lost=ctx.isContextLost&&ctx.isContextLost();box.textContent=`${fps||'…'} fps · tier ${tier} · ${DPR}x${isTV?' · TV':''} · frames ${drawn}${kicking?' · timer':''}${lost?' · LOST':''}${swaps?' · swaps '+swaps:''}${lastErr?' · '+lastErr:''}`},500)}
 function draw(now){
   const raw=now-last,dt=Math.min(Math.max(raw,0),1000);last=now;watchPerf(raw);
   ctx.drawImage(floor,0,0,W,H);
@@ -615,7 +628,6 @@ function draw(now){
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.life-=dt;d.x+=d.vx*dt*.06;d.y+=d.vy*dt*.06;d.vy+=.006*dt;if(d.life<0){drops.splice(i,1);continue}ctx.fillStyle=`rgba(225,242,236,${d.life/500})`;ctx.beginPath();ctx.arc(d.x,d.y,1.8,0,7);ctx.fill()}
   for(let i=flying.length-1;i>=0;i--){const c=flying[i];c.t+=dt/c.dur;const k=Math.min(c.t,1);const x=c.sx+(c.tx-c.sx)*k,arc=Math.sin(k*Math.PI)*Math.min(260,H*.35),y=c.sy+(c.ty-c.sy)*k-arc,r=(26-13*k)*SC;
     ctx.fillStyle='rgba(6,20,18,.25)';ctx.beginPath();ctx.ellipse(x+arc*.15,c.sy+(c.ty-c.sy)*k,r*.8,r*.35,0,0,7);ctx.fill();drawCoin(x,y,r,c.tilt,1,k*14);if(k>=1){landCoin(c);flying.splice(i,1)}}
-  if(showFps){ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(8,8,lastErr||kicking?520:190,26);ctx.fillStyle='#fff';ctx.font='13px monospace';ctx.fillText(`${fps||'…'} fps · tier ${tier} · ${DPR}x${isTV?' · TV':''}${kicking?' · timer':''}${lastErr?' · '+lastErr:''}`,16,26)}
 }
 
 /* ---------- layout ---------- */
@@ -749,7 +761,7 @@ $('dock').addEventListener('click',e=>{const b=e.target.closest('[data-dock]');i
   if(a==='shop'){openShop();return}setMode(mode===a?'ripple':a)});
 $('pillDone').onclick=()=>setMode('ripple');
 const WISH_LINES=['Your coin settles among the stones.','A wish, kept by the koi.','The water closes over it. Breathe out.','Somewhere a koi takes note.','Another small hope in the pond.'];
-cvs.addEventListener('pointerdown',e=>{
+function onPondDown(e){
   if(menu.classList.contains('open')){toggleMenu(false);return}
   const x=e.clientX,y=e.clientY;
   if(mode==='throw'){if(S.coins<1){toast('Out of coins. Get more from the menu.');return}
@@ -757,7 +769,8 @@ cvs.addEventListener('pointerdown',e=>{
   ripple(x,y,1);for(const k of fish)if(Math.hypot(k.x-x,k.y-y)<k.len*.4)k.startle(x,y);
   if(mode==='feed'){if(S.coins<1){toast('Out of coins. Get more from the menu.');return}
     S.coins--;save();renderCoins();for(let i=0;i<10;i++)pellets.push({x:x+rnd(-24,24)*SC,y:y+rnd(-24,24)*SC,life:12000});if(pellets.length>200)pellets.splice(0,pellets.length-200)}
-});
+}
+cvs.addEventListener('pointerdown',onPondDown);
 
 // shop
 const sheet=$('sheet'),scrim=$('scrim');
