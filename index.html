@@ -347,8 +347,8 @@ const floor=document.createElement('canvas'),fctx=floor.getContext('2d');
 /* ---------- state ---------- */
 const KEY='stillwater:v2';
 const defaults={coins:20,koi:{kohaku:{owned:4,shown:4},tancho:{owned:2,shown:2}},extras:['blooms'],extrasOff:[],pondCoins:[]};
-const SOUND_LIST=[['music','Music'],['wind','Wind'],['birds','Birds'],['chimes','Chimes'],['crickets','Crickets'],['stream','Stream'],['rain','Rain']];
-const defaultSettings={version:1,muted:false,shimmer:true,showUi:true,snd:{music:{on:true,vol:.6},wind:{on:true,vol:.35},birds:{on:true,vol:.3},chimes:{on:false,vol:.35},crickets:{on:false,vol:.3},stream:{on:true,vol:.3},rain:{on:false,vol:.4}}};
+const SOUND_LIST=[['music','Music'],['wind','Wind'],['birds','Birds'],['chimes','Chimes'],['crickets','Crickets'],['frogs','Bullfrog'],['stream','Stream'],['rain','Rain']];
+const defaultSettings={version:1,muted:false,shimmer:true,showUi:true,snd:{music:{on:true,vol:.6},wind:{on:true,vol:.35},birds:{on:true,vol:.3},chimes:{on:false,vol:.35},crickets:{on:false,vol:.3},frogs:{on:false,vol:.4},stream:{on:true,vol:.3},rain:{on:false,vol:.4}}};
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY));if(!S){const old=JSON.parse(localStorage.getItem('stillwater:v1')||'null');S=old?{...defaults,coins:old.coins??20,pondCoins:old.pondCoins||[]}:null}}catch(e){S=null}
 S={...defaults,...(S||{})};
@@ -667,6 +667,13 @@ function tone(dest,{type='sine',f,f2,t,dur,peak,attack=.01,send=0}){
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+attack);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
   o.connect(g).connect(dest);if(send){const sg=AC.createGain();sg.gain.value=send;g.connect(sg).connect(verb)}o.start(t);o.stop(t+dur+.05)}
 function bell(dest,f,t,amp){for(const [m,a,d] of[[1,1,4.5],[2.76,.32,2.4],[5.4,.12,1.2]])tone(dest,{f:f*m,t,dur:d,peak:amp*a,attack:.004,send:.6})}
+function croak(dest,t,f,amp,pan){
+  const o=AC.createOscillator(),lfo=AC.createOscillator(),lg=AC.createGain(),am=AC.createGain(),lp=filt('lowpass',rnd(650,850),5),env=AC.createGain(),dur=rnd(.5,.85),ns=[o,lfo,lg,am,lp,env];
+  o.type='sawtooth';o.frequency.setValueAtTime(f*1.12,t);o.frequency.exponentialRampToValueAtTime(f*.82,t+dur);
+  lfo.frequency.value=rnd(26,38);lg.gain.value=.4;am.gain.value=.6;lfo.connect(lg).connect(am.gain);
+  env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(amp,t+.04);env.gain.setValueAtTime(amp,t+dur*.6);env.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(lp).connect(am).connect(env);if(AC.createStereoPanner){const p=AC.createStereoPanner();p.pan.value=pan;env.connect(p).connect(dest);ns.push(p)}else env.connect(dest);
+  o.onended=()=>{for(const n of ns)n.disconnect()};o.start(t);lfo.start(t);o.stop(t+dur+.05);lfo.stop(t+dur+.05)}
 const PENTA=[62,64,66,69,71,74,76,78,81,83].map(hz);
 const GEN={
   music:{base:.55,init(c){c.idx=4;c.chord=0;c.nextChord=0;c.pad=filt('lowpass',900);const pg=AC.createGain();pg.gain.value=.5;c.pad.connect(pg).connect(c.out);const sg=AC.createGain();sg.gain.value=.5;pg.connect(sg).connect(verb)},
@@ -687,6 +694,11 @@ const GEN={
     tick(c,t){for(let i=0;i<3;i++)if(Math.random()<.5){const f=rnd(1800,4200);tone(panned(c.out),{f,f2:f*.6,t:t+Math.random()*.1,dur:.05,peak:.12,attack:.002})}}},
   crickets:{base:.22,init(c){c.v=[{next:0,f:rnd(4300,4600)},{next:.4,f:rnd(4700,5000)}];c.p=panned(c.out)},
     tick(c,t){for(const v of c.v)if(t>=v.next){const at=Math.max(t,v.next)+.02;for(let k=0;k<4;k++)tone(c.p,{f:v.f,t:at+k*.05,dur:.03,peak:.22,attack:.006});v.next=at+(Math.random()<.15?rnd(2,4):rnd(.6,1.1))}}},
+  frogs:{base:.9,init(c){c.next=2},
+    tick(c,t){if(t>=c.next){const pan=rnd(-.8,.8),f=rnd(90,140),a=rnd(.2,.32),n=Math.random()<.3?1:2+Math.floor(Math.random()*2);let at=t+.05;
+      for(let i=0;i<n;i++){croak(c.out,at,f*rnd(.96,1.04),a*rnd(.85,1),pan);at+=rnd(.9,1.2)}
+      if(Math.random()<.3)croak(c.out,at+rnd(.5,1.5),rnd(100,150),a*.6,-pan);
+      c.next=t+rnd(5,14)}}},
   birds:{base:.35,init(c){c.next=1},
     tick(c,t){if(t>=c.next){const p=panned(c.out),n=2+Math.floor(Math.random()*5),f0=rnd(2300,3600),shape=Math.random();let at=t+.05;
       for(let i=0;i<n;i++){const f=f0*rnd(.9,1.15),d=rnd(.06,.15);tone(p,{f,f2:shape<.5?f*rnd(1.2,1.5):f*rnd(.6,.8),t:at,dur:d,peak:.22,attack:.008,send:.25});at+=d+rnd(.04,.13)}
