@@ -28,7 +28,8 @@
 <meta name="apple-mobile-web-app-title" content="Still Water">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
   box-sizing:border-box;
@@ -44,7 +45,7 @@
 :root[data-theme="dark"]{--panel:rgba(20,36,35,.97);--panel-ink:#efe9dc;--muted:#a3b3ad;--line:rgba(239,233,220,.16);}
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--deep);font-family:var(--sans);color:var(--paper)}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--deep);font-family:var(--sans);color:var(--paper)}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:.55rem 1rem;background:transparent;color:inherit}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
@@ -573,7 +574,14 @@ function watchPerf(raw){if(document.hidden||raw>3000)return;if(performance.now()
   perf.slow=raw>150?perf.slow+1:0;if(perf.slow>=3){fps=Math.round(1000/raw);return dropTier()}
   perf.t+=raw;perf.n++;if(perf.t<1500||perf.n<3)return;const avg=perf.t/perf.n;fps=Math.round(1000/avg);perf={t:0,n:0,wait:0,slow:0};
   if((tier===0&&avg>25)||(tier===1&&avg>40)||(tier===2&&avg>55))dropTier()}
-function frame(){requestAnimationFrame(frame);try{draw(performance.now())}catch(e){console.error(e)}}
+let rafAt=performance.now(),kicking=false,lastErr='';
+function step(){try{draw(performance.now())}catch(e){lastErr=String(e&&e.message||e).slice(0,60);console.error(e)}}
+function frame(){rafAt=performance.now();requestAnimationFrame(frame);step()}
+// Some TV browsers stop firing rAF (screen saver, input switch) and never resume; keep the pond moving on timers until rAF is back.
+function kick(){if(document.hidden||performance.now()-rafAt<500){kicking=false;return}step();setTimeout(kick,33)}
+setInterval(()=>{if(!kicking&&!document.hidden&&performance.now()-rafAt>1500){kicking=true;requestAnimationFrame(frame);kick()}},1000);
+// TVs drop canvas memory under pressure; when it comes back, redraw the floor and go lighter so it doesn't happen again.
+cvs.addEventListener('contextrestored',()=>{if(tier<3)dropTier();else ctx.setTransform(DPR,0,0,DPR,0,0);buildFloor()});
 function draw(now){
   const raw=now-last,dt=Math.min(Math.max(raw,0),1000);last=now;watchPerf(raw);
   ctx.drawImage(floor,0,0,W,H);
@@ -587,7 +595,7 @@ function draw(now){
   // food
   for(let i=pellets.length-1;i>=0;i--){const p=pellets[i];p.life-=dt;if(p.eaten||p.life<0){if(p.eaten)ripple(p.x,p.y,.5);pellets.splice(i,1);continue}ctx.fillStyle='#b88a4a';ctx.beginPath();ctx.arc(p.x,p.y,3*SC,0,7);ctx.fill()}
   // koi: shadows first, then bodies
-  const steps=Math.ceil(dt/20);for(const k of fish)for(let i=0;i<steps;i++)k.update(dt/steps);
+  const steps=Math.min(10,Math.ceil(dt/20));for(const k of fish)for(let i=0;i<steps;i++)k.update(dt/steps);
   // Slowest tier draws below 1x and the CSS-sized canvas upscales it; shadows are skipped.
   if(tier>2);
   else if(lite){sctx.setTransform(1,0,0,1,0,0);sctx.clearRect(0,0,shadow.width,shadow.height);sctx.setTransform(shadow.width/W,0,0,shadow.height/H,0,0);
@@ -607,7 +615,7 @@ function draw(now){
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.life-=dt;d.x+=d.vx*dt*.06;d.y+=d.vy*dt*.06;d.vy+=.006*dt;if(d.life<0){drops.splice(i,1);continue}ctx.fillStyle=`rgba(225,242,236,${d.life/500})`;ctx.beginPath();ctx.arc(d.x,d.y,1.8,0,7);ctx.fill()}
   for(let i=flying.length-1;i>=0;i--){const c=flying[i];c.t+=dt/c.dur;const k=Math.min(c.t,1);const x=c.sx+(c.tx-c.sx)*k,arc=Math.sin(k*Math.PI)*Math.min(260,H*.35),y=c.sy+(c.ty-c.sy)*k-arc,r=(26-13*k)*SC;
     ctx.fillStyle='rgba(6,20,18,.25)';ctx.beginPath();ctx.ellipse(x+arc*.15,c.sy+(c.ty-c.sy)*k,r*.8,r*.35,0,0,7);ctx.fill();drawCoin(x,y,r,c.tilt,1,k*14);if(k>=1){landCoin(c);flying.splice(i,1)}}
-  if(showFps){ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(8,8,190,26);ctx.fillStyle='#fff';ctx.font='13px monospace';ctx.fillText(`${fps||'…'} fps · tier ${tier} · ${DPR}x${isTV?' · TV':''}`,16,26)}
+  if(showFps){ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(8,8,lastErr||kicking?520:190,26);ctx.fillStyle='#fff';ctx.font='13px monospace';ctx.fillText(`${fps||'…'} fps · tier ${tier} · ${DPR}x${isTV?' · TV':''}${kicking?' · timer':''}${lastErr?' · '+lastErr:''}`,16,26)}
 }
 
 /* ---------- layout ---------- */
@@ -748,7 +756,7 @@ cvs.addEventListener('pointerdown',e=>{
     S.coins--;save();renderCoins();throwCoin(x,y);setTimeout(()=>{renderWishes();toast(WISH_LINES[Math.floor(Math.random()*WISH_LINES.length)])},reduce?300:900);return}
   ripple(x,y,1);for(const k of fish)if(Math.hypot(k.x-x,k.y-y)<k.len*.4)k.startle(x,y);
   if(mode==='feed'){if(S.coins<1){toast('Out of coins. Get more from the menu.');return}
-    S.coins--;save();renderCoins();for(let i=0;i<10;i++)pellets.push({x:x+rnd(-24,24)*SC,y:y+rnd(-24,24)*SC,life:12000})}
+    S.coins--;save();renderCoins();for(let i=0;i<10;i++)pellets.push({x:x+rnd(-24,24)*SC,y:y+rnd(-24,24)*SC,life:12000});if(pellets.length>200)pellets.splice(0,pellets.length-200)}
 });
 
 // shop
