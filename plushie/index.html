@@ -239,6 +239,7 @@ const TYPES={
   cat:{name:'Lulu the Cat',color:'#c7a6ff',w:5},
   octo:{name:'Tako the Octopus',color:'#ff8f8a',w:4},
   whale:{name:'Splash the Whale',color:'#5cc8d6',w:4},
+  penguin:{name:'Waddle the Penguin',color:'#2d3a5a',w:5},
   star:{name:'Twinkle the Golden Star',color:'#ffcf3d',w:0,rare:true},
 };
 function shade(hex,amt){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;r=clamp(r+amt,0,255);g=clamp(g+amt,0,255);b=clamp(b+amt,0,255);return`rgb(${r},${g},${b})`}
@@ -258,6 +259,10 @@ function drawPlush(c,type,x,y,r,rot=0,sq=1){
   else if(type==='whale'){c.fillStyle=shade(col,-20);c.beginPath();c.moveTo(r*.8,r*.1);c.quadraticCurveTo(r*1.25,-r*.1,r*1.35,-r*.55);c.quadraticCurveTo(r*1.1,-r*.25,r*.95,-r*.3);c.quadraticCurveTo(r*1.05,-r*.65,r*.75,-r*.75);c.quadraticCurveTo(r*.9,-r*.2,r*.6,-r*.1);c.fill();
     c.strokeStyle='#bdf3ff';c.lineWidth=r*.08;c.lineCap='round';c.beginPath();c.moveTo(0,-r*1.0);c.lineTo(0,-r*1.3);c.moveTo(0,-r*1.08);c.quadraticCurveTo(-r*.2,-r*1.35,-r*.3,-r*1.2);c.moveTo(0,-r*1.08);c.quadraticCurveTo(r*.2,-r*1.35,r*.3,-r*1.2);c.stroke();
     body(c,r,col);c.fillStyle='#dff8fb';c.beginPath();c.ellipse(0,r*.5,r*.6,r*.35,0,Math.PI,0,true);c.fill();face(c,r,-r*.12)}
+  else if(type==='penguin'){c.fillStyle='#ff9a3c';for(const s of[-1,1]){c.beginPath();c.ellipse(s*r*.4,r*.95,r*.26,r*.14,0,0,7);c.fill()}c.fillStyle=shade(col,-12);for(const s of[-1,1]){c.beginPath();c.ellipse(s*r*.98,r*.2,r*.2,r*.42,s*.35,0,7);c.fill()}body(c,r,col);c.fillStyle='#f6f8ff';c.beginPath();c.ellipse(0,r*.2,r*.68,r*.72,0,0,7);c.fill();
+    c.fillStyle='#1a1f33';for(const s of[-1,1]){c.beginPath();c.ellipse(s*r*.3,-r*.05,r*.1,r*.13,0,0,7);c.fill();c.fillStyle='#fff';c.beginPath();c.arc(s*r*.3+r*.03,-r*.1,r*.035,0,7);c.fill();c.fillStyle='#1a1f33'}
+    c.fillStyle='rgba(255,110,150,.45)';for(const s of[-1,1]){c.beginPath();c.ellipse(s*r*.5,r*.17,r*.12,r*.08,0,0,7);c.fill()}
+    c.fillStyle='#ff9a3c';c.beginPath();c.moveTo(-r*.16,r*.08);c.quadraticCurveTo(0,r*.02,r*.16,r*.08);c.quadraticCurveTo(r*.1,r*.3,0,r*.32);c.quadraticCurveTo(-r*.1,r*.3,-r*.16,r*.08);c.fill()}
   else if(type==='star'){const g=c.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r*1.1);g.addColorStop(0,'#fff3a6');g.addColorStop(1,col);c.fillStyle=g;c.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,rr=k%2?r*.55:r*1.12;c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr+r*.08)}c.closePath();c.fill();c.strokeStyle='#e0a400';c.lineWidth=r*.06;c.lineJoin='round';c.stroke();face(c,r*.85,r*.12)}
   c.restore()}
 const iconCache={};
