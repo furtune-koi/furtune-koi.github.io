@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Plushie Grab — a claw machine game</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#7ed0ff">
@@ -26,6 +26,7 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sky:#3f6fd1;--sky-2:#2a4a9a}}
 :root[data-theme="dark"]{--sky:#3f6fd1;--sky-2:#2a4a9a}
 *,*::before,*::after{box-sizing:inherit}
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;min-height:100%;font-family:var(--font);color:var(--grape);
   background:radial-gradient(60px 40px at 12% 18%,rgba(255,255,255,.75) 60%,transparent 62%),radial-gradient(90px 50px at 17% 16%,rgba(255,255,255,.75) 60%,transparent 62%),
@@ -42,6 +43,9 @@ button:focus-visible{outline:3px solid var(--grape);outline-offset:3px}
 .chip .plus{width:28px;height:28px;border-radius:50%;background:var(--sun);font-weight:700;font-size:1.1rem;line-height:1;display:grid;place-items:center}
 .icon-btn{width:40px;height:40px;border-radius:50%;background:var(--white);display:grid;place-items:center;box-shadow:0 3px 0 rgba(74,47,148,.2);position:relative}
 .icon-btn[aria-pressed="false"]{opacity:.55}
+.refill{height:40px;padding:0 .85rem 0 .65rem;border-radius:999px;background:var(--sun);color:var(--grape);font-weight:700;display:flex;align-items:center;gap:.3rem;box-shadow:0 3px 0 #d9a800;margin-right:auto}
+.refill:active{transform:translateY(2px);box-shadow:0 1px 0 #d9a800}
+.refill[aria-disabled="true"]{opacity:.5;filter:grayscale(.5);cursor:not-allowed;box-shadow:0 3px 0 rgba(74,47,148,.2)}
 .badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--cherry);color:#fff;font-size:.75rem;font-weight:700;display:grid;place-items:center}
 .coin{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff1a8,var(--sun) 55%,#d99a00);box-shadow:inset 0 0 0 2px rgba(160,100,0,.35);display:inline-grid;place-items:center;flex:none;font-size:.6rem;font-weight:700;color:#9a6200}
 .coin::after{content:"★"}
@@ -156,7 +160,7 @@ body{padding-bottom:.6rem}
 </head>
 <body>
 <div class="bar">
-  <div style="margin-right:auto"></div>
+  <button class="refill" id="refillBtn" aria-label="Refill the machine with plushies"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5" fill="none" stroke="#4a2f94" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Refill</button>
   <div class="chip" aria-live="polite"><span class="coin" aria-hidden="true"></span><span id="coins">0</span><span class="sr">coins</span><button class="plus" id="getCoins" aria-label="Get more coins">+</button></div>
   <button class="icon-btn" id="prizesBtn" aria-label="My prizes"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16v11H4z" fill="#ff6fae"/><path d="M3 6h18v4H3z" fill="#ff8fc0"/><path d="M11 6h2v14h-2z" fill="#ffd23f"/><path d="M12 6c-2-4-6-3-5 0zM12 6c2-4 6-3 5 0z" fill="none" stroke="#ffd23f" stroke-width="2"/></svg><span class="badge" id="prizeCount" hidden>0</span></button>
   <button class="icon-btn" id="musicBtn" aria-label="Music" aria-pressed="true"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="#4a2f94" stroke-width="2.2" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="3" fill="#4a2f94"/><circle cx="17.5" cy="16" r="3" fill="#4a2f94"/></svg></button>
@@ -263,9 +267,14 @@ function iconURL(type){if(iconCache[type])return iconCache[type];const k=documen
 let toys=[];
 function pickType(){const list=Object.entries(TYPES).filter(([,t])=>t.w);let sum=list.reduce((a,[,t])=>a+t.w,0),r=Math.random()*sum;for(const [k,t] of list){if((r-=t.w)<0)return k}return'bunny'}
 function newToy(type,x,y){return{type,x,y,vx:rnd(-30,30),vy:0,r:rnd(27,33),rot:rnd(-.4,.4),vr:0,sq:1,held:false}}
+const PILE=18,EMPTY_MSG='The machine is empty. Tap Refill to add more plushies.';
 let prefill=false;
-function fillPile(){prefill=true;toys=[];for(let i=0;i<17;i++)toys.push(newToy(pickType(),rnd(CHUTE+50,W-40),rnd(140,FLOOR-40)));toys.push(newToy('star',rnd(CHUTE+80,W-60),rnd(200,300)));toys[toys.length-1].r=31;
+function fillPile(){prefill=true;toys=[];for(let i=0;i<PILE-1;i++)toys.push(newToy(pickType(),rnd(CHUTE+50,W-40),rnd(140,FLOOR-40)));toys.push(newToy('star',rnd(CHUTE+80,W-60),rnd(200,300)));toys[toys.length-1].r=31;
   for(let k=0;k<400;k++)physics(1/60);prefill=false}
+function refill(){if(playing||pendingWin||toys.length>=PILE)return;
+  const star=!toys.some(t=>t.type==='star');
+  for(let i=0,n=PILE-toys.length;i<n;i++)toys.push(newToy(star&&!i?'star':pickType(),rnd(CHUTE+60,W-50),-40-i*70));
+  sfx.click();setStatus('Insert a coin to play');setUI()}
 function physics(dt){
   for(const t of toys){if(t.held)continue;t.vy+=1400*dt;t.vx*=.995;t.x+=t.vx*dt;t.y+=t.vy*dt;t.rot+=t.vr*dt;t.vr*=.96;t.sq+=(1-t.sq)*.2}
   for(let it=0;it<4;it++){
@@ -294,7 +303,7 @@ const HOME=CHUTE/2+4;
 const claw={x:HOME,y:RAIL+30,open:1,state:'idle',held:null,align:0,timer:0,vx:0};
 let playing=false,timeLeft=0,moveDir=0,lastTick=0;
 function clawTipY(){return claw.y+32}
-function startPlay(){if(pendingWin||$('winDlg').open||playing)return;if(S.coins<1){toast('Out of coins. Tap + to get more.');openSheet('shop');return}
+function startPlay(){if(pendingWin||$('winDlg').open||playing)return;if(!toys.length){toast(EMPTY_MSG);return}if(S.coins<1){toast('Out of coins. Tap + to get more.');openSheet('shop');return}
   S.coins--;save();renderCoins();sfx.coin();playing=true;timeLeft=20;claw.state='move';claw.x=HOME;claw.open=1;setUI();setStatus('Move the claw, then grab!')}
 function drop(){if(claw.state!=='move')return;claw.state='down';moveDir=0;sfx.drop();setUI();setStatus('Here it goes…')}
 function updateClaw(dt){
@@ -328,9 +337,9 @@ function finish(success){playing=false;claw.state='idle';claw.open=1;
   setTimeout(()=>{if(claw.state!=='idle')return;if(!pendingWin)setStatus(S.coins>0?'So close! Insert a coin to try again':'Out of coins. Tap + to get more');setUI()},success?900:200);
   if(!success)sfx.fail();setUI()}
 function won(type){S.prizes[type]=(S.prizes[type]||0)+1;save();renderPrizes();pendingWin=type;sfx.win();confetti();
-  setTimeout(()=>{toys.push(newToy(type==='star'?'star':pickType(),rnd(CHUTE+60,W-50),-40));pendingWin=null;
+  setTimeout(()=>{pendingWin=null;
     $('winImg').src=iconURL(type);$('winImg').alt=TYPES[type].name;$('winTitle').textContent=TYPES[type].rare?'Super rare win!':'You won!';
-    $('winText').textContent=`${TYPES[type].name} is going home with you.`;if(!$('winDlg').open)$('winDlg').showModal();setStatus('Insert a coin to play');setUI()},700)}
+    $('winText').textContent=`${TYPES[type].name} is going home with you.`;if(!$('winDlg').open)$('winDlg').showModal();setStatus(toys.length?'Insert a coin to play':'Machine empty. Tap Refill');setUI()},700)}
 
 /* ---------- confetti ---------- */
 const bits=[];
@@ -425,7 +434,10 @@ function setUI(){const moving=claw.state==='move',busy=playing&&!moving;
   document.querySelector('.panel').classList.toggle('idle',!playing);
   const a=$('action');a.classList.toggle('coin-mode',!playing);a.disabled=busy||!!pendingWin;
   $('actionText').textContent=playing?'Grab!':'Play';a.querySelector('.coin').style.display=playing?'none':'';
+  const full=toys.length>=PILE,rb=$('refillBtn');rb.setAttribute('aria-disabled',full||playing||!!pendingWin);
   $('slotTitle').textContent=playing?'Aim':'1 coin';$('slotSub').textContent=playing?'then grab':'per play'}
+$('refillBtn').onclick=refill;
+$('winDlg').addEventListener('close',()=>{if(!toys.length)toast(EMPTY_MSG)});
 $('action').onclick=()=>{if(!playing)startPlay();else drop()};
 function bindHold(id,dir){const b=$(id);const on=e=>{e.preventDefault();if(b.disabled)return;moveDir=dir;b.classList.add('down');b.setPointerCapture?.(e.pointerId)};const off=()=>{if(moveDir===dir)moveDir=0;b.classList.remove('down')};
   b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off)}
@@ -435,8 +447,12 @@ addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||docume
   if(e.key==='ArrowRight'&&claw.state==='move'){moveDir=1;e.preventDefault()}
   if(e.key===' '||e.key==='Enter'){e.preventDefault();if(!e.repeat)$('action').click()}});
 addEventListener('keyup',e=>{if((e.key==='ArrowLeft'&&moveDir<0)||(e.key==='ArrowRight'&&moveDir>0))moveDir=0});
-// tap the glass to drop too
-cvs.addEventListener('pointerdown',()=>{if(claw.state==='move')drop()});
+
+// iOS Safari ignores user-scalable=no: block pinch and double-tap zoom, but never swallow taps on controls
+for(const ev of['gesturestart','gesturechange'])document.addEventListener(ev,e=>e.preventDefault());
+let lastTouchEnd=0;
+document.addEventListener('touchend',e=>{const now=Date.now();
+  if(now-lastTouchEnd<300&&!e.target.closest('button,a,input,select,textarea,label,summary,dialog'))e.preventDefault();lastTouchEnd=now},{passive:false});
 
 // sound toggles
 function renderSound(){$('musicBtn').setAttribute('aria-pressed',S.music);$('sfxBtn').setAttribute('aria-pressed',S.sfx)}
@@ -466,7 +482,7 @@ function renderPrizeGrid(){const keys=Object.keys(TYPES),got=keys.filter(k=>S.pr
   $('prizeGrid').innerHTML=keys.map(k=>{const n=S.prizes[k]||0;return`<div class="prize ${n?'':'none'}"><img src="${iconURL(k)}" alt=""><b>${n?TYPES[k].name.split(' the ')[0]:'???'}</b><small>${n?`× ${n}`:TYPES[k].rare?'Super rare':'Not won yet'}</small></div>`}).join('');
   $('prizeNote').textContent=got===keys.length?'You collected the whole squad. Amazing!':`You've collected ${got} of ${keys.length} plushies. Keep grabbing to find them all!`}
 
-renderCoins();renderPrizes();renderSound();setUI();fillPile();requestAnimationFrame(frame);
+renderCoins();renderPrizes();renderSound();fillPile();setUI();requestAnimationFrame(frame);
 })();
 </script>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(()=>{}))</script>
