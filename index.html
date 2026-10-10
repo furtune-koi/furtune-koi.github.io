@@ -670,13 +670,12 @@ function bell(dest,f,t,amp){for(const [m,a,d] of[[1,1,4.5],[2.76,.32,2.4],[5.4,.
 let frogBuf=null,frogLoad=null;
 function loadFrogs(){frogLoad=fetch('sounds/frogs.mp3').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(b=>{frogBuf=b}).catch(()=>{frogLoad=null})}
 function coinSplash(x){if(!AC||S.settings.muted||AC.state!=='running')return;const t=AC.currentTime+.01;
-  let out=master;if(AC.createStereoPanner){out=AC.createStereoPanner();out.pan.value=clamp((x/W)*2-1,-1,1)*.6;out.connect(master);setTimeout(()=>out.disconnect(),1500)}
-  // A water drop's "bloop" is a fast upward pitch sweep; the splash is a short band of noise.
-  tone(out,{f:rnd(260,340),f2:rnd(1000,1300),t,dur:.14,peak:.32,attack:.004,send:.35});
-  tone(out,{f:rnd(2600,3000),t,dur:.18,peak:.05,attack:.002});
-  const n=noise(),bp=filt('bandpass',rnd(2200,3200),.8),g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.22);
-  n.connect(bp).connect(g).connect(out);n.stop(t+.25);n.onended=()=>{n.disconnect();bp.disconnect();g.disconnect()};
-  tone(out,{f:rnd(500,650),f2:rnd(1400,1700),t:t+rnd(.12,.2),dur:.08,peak:.1,attack:.003,send:.3})}
+  let out=master;if(AC.createStereoPanner){out=AC.createStereoPanner();out.pan.value=clamp((x/W)*2-1,-1,1)*.6;out.connect(master);setTimeout(()=>out.disconnect(),5500)}
+  // A water drop's "plop" is an upward pitch sweep; keep the splash soft and finish with a wish chime.
+  tone(out,{f:rnd(170,210),f2:rnd(480,560),t,dur:.22,peak:.26,attack:.012,send:.4});
+  const n=noise(),bp=filt('bandpass',rnd(1100,1500),.6),lp=filt('lowpass',2400),g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.35);
+  n.connect(bp).connect(lp).connect(g).connect(out);n.stop(t+.4);n.onended=()=>{n.disconnect();bp.disconnect();lp.disconnect();g.disconnect()};
+  const k=4+Math.floor(Math.random()*4);bell(out,PENTA[k],t+.28,.07);bell(out,PENTA[k+2],t+.46,.045)}
 const PENTA=[62,64,66,69,71,74,76,78,81,83].map(hz);
 const GEN={
   music:{base:.55,init(c){c.idx=4;c.chord=0;c.nextChord=0;c.pad=filt('lowpass',900);const pg=AC.createGain();pg.gain.value=.5;c.pad.connect(pg).connect(c.out);const sg=AC.createGain();sg.gain.value=.5;pg.connect(sg).connect(verb)},
