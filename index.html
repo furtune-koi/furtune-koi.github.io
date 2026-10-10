@@ -673,7 +673,6 @@ function coinSplash(x){const sp=S.settings.snd.splash;if(!AC||S.settings.muted||
   let out=chans.splash.out;if(AC.createStereoPanner){out=AC.createStereoPanner();out.pan.value=clamp((x/W)*2-1,-1,1)*.6;out.connect(chans.splash.out);setTimeout(()=>out.disconnect(),1500)}
   // A water drop's "bloop" is a fast upward pitch sweep; the splash is a short band of noise.
   tone(out,{f:rnd(260,340),f2:rnd(1000,1300),t,dur:.14,peak:.32,attack:.004,send:.35*sp.vol});
-  tone(out,{f:rnd(2600,3000),t,dur:.18,peak:.05,attack:.002});
   const n=noise(),bp=filt('bandpass',rnd(2200,3200),.8),g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.22);
   n.connect(bp).connect(g).connect(out);n.stop(t+.25);n.onended=()=>{n.disconnect();bp.disconnect();g.disconnect()};
   tone(out,{f:rnd(500,650),f2:rnd(1400,1700),t:t+rnd(.12,.2),dur:.08,peak:.1,attack:.003,send:.3*sp.vol})}
