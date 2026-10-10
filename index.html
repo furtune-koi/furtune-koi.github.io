@@ -560,7 +560,7 @@ function drawCoin(x,y,r,tilt,alpha=1,spin=0){
   const g=ctx.createRadialGradient(-r*.3,-r*.3,0,0,0,r);g.addColorStop(0,'#fbe6a2');g.addColorStop(.55,'#e3b44c');g.addColorStop(1,'#9c711c');
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fill();ctx.strokeStyle='rgba(110,70,10,.55)';ctx.lineWidth=Math.max(1,r*.12);ctx.strokeRect(-r*.3,-r*.3,r*.6,r*.6);ctx.restore()}
 function throwCoin(tx,ty){const sx=W/2,sy=H+30;flying.push({sx,sy,tx,ty,t:0,dur:reduce?250:750+Math.hypot(tx-sx,ty-sy)*.35,tilt:rnd(-.6,.6)})}
-function landCoin(c){ripple(c.tx,c.ty,1.4);ripple(c.tx,c.ty,.9);for(const k of fish)k.startle(c.tx,c.ty);
+function landCoin(c){coinSplash(c.tx);ripple(c.tx,c.ty,1.4);ripple(c.tx,c.ty,.9);for(const k of fish)k.startle(c.tx,c.ty);
   for(let i=0;i<8;i++)drops.push({x:c.tx,y:c.ty,vx:rnd(-1.6,1.6),vy:rnd(-2.6,-1),life:500});sinking.push({x:c.tx,y:c.ty,t:0,tilt:c.tilt})}
 const flies=Array.from({length:22},()=>({x:rnd(0,1),y:rnd(0,1),p:rnd(0,100)}));
 
@@ -669,6 +669,14 @@ function tone(dest,{type='sine',f,f2,t,dur,peak,attack=.01,send=0}){
 function bell(dest,f,t,amp){for(const [m,a,d] of[[1,1,4.5],[2.76,.32,2.4],[5.4,.12,1.2]])tone(dest,{f:f*m,t,dur:d,peak:amp*a,attack:.004,send:.6})}
 let frogBuf=null,frogLoad=null;
 function loadFrogs(){frogLoad=fetch('sounds/frogs.mp3').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(b=>{frogBuf=b}).catch(()=>{frogLoad=null})}
+function coinSplash(x){if(!AC||S.settings.muted||AC.state!=='running')return;const t=AC.currentTime+.01;
+  let out=master;if(AC.createStereoPanner){out=AC.createStereoPanner();out.pan.value=clamp((x/W)*2-1,-1,1)*.6;out.connect(master);setTimeout(()=>out.disconnect(),1500)}
+  // A water drop's "bloop" is a fast upward pitch sweep; the splash is a short band of noise.
+  tone(out,{f:rnd(260,340),f2:rnd(1000,1300),t,dur:.14,peak:.32,attack:.004,send:.35});
+  tone(out,{f:rnd(2600,3000),t,dur:.18,peak:.05,attack:.002});
+  const n=noise(),bp=filt('bandpass',rnd(2200,3200),.8),g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.22);
+  n.connect(bp).connect(g).connect(out);n.stop(t+.25);n.onended=()=>{n.disconnect();bp.disconnect();g.disconnect()};
+  tone(out,{f:rnd(500,650),f2:rnd(1400,1700),t:t+rnd(.12,.2),dur:.08,peak:.1,attack:.003,send:.3})}
 const PENTA=[62,64,66,69,71,74,76,78,81,83].map(hz);
 const GEN={
   music:{base:.55,init(c){c.idx=4;c.chord=0;c.nextChord=0;c.pad=filt('lowpass',900);const pg=AC.createGain();pg.gain.value=.5;c.pad.connect(pg).connect(c.out);const sg=AC.createGain();sg.gain.value=.5;pg.connect(sg).connect(verb)},
