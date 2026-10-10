@@ -671,9 +671,7 @@ let frogBuf=null,frogLoad=null;
 function loadFrogs(){frogLoad=fetch('sounds/frogs.mp3').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(b=>{frogBuf=b}).catch(()=>{frogLoad=null})}
 function coinSplash(x){if(!AC||S.settings.muted||AC.state!=='running')return;const t=AC.currentTime+.01;
   let out=master;if(AC.createStereoPanner){out=AC.createStereoPanner();out.pan.value=clamp((x/W)*2-1,-1,1)*.6;out.connect(master);setTimeout(()=>out.disconnect(),1500)}
-  // A water drop's "plop" is an upward pitch sweep; keep the splash soft.
-  tone(out,{f:rnd(170,210),f2:rnd(480,560),t,dur:.22,peak:.26,attack:.012,send:.4});
-  const n=noise(),bp=filt('bandpass',rnd(1100,1500),.6),lp=filt('lowpass',2400),g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.35);
+  const n=noise(),bp=filt('bandpass',rnd(1100,1500),.6),lp=filt('lowpass',2400),g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.14,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.4);
   n.connect(bp).connect(lp).connect(g).connect(out);n.stop(t+.4);n.onended=()=>{n.disconnect();bp.disconnect();lp.disconnect();g.disconnect()}}
 const PENTA=[62,64,66,69,71,74,76,78,81,83].map(hz);
 const GEN={
