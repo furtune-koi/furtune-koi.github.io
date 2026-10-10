@@ -347,7 +347,7 @@ const floor=document.createElement('canvas'),fctx=floor.getContext('2d');
 /* ---------- state ---------- */
 const KEY='stillwater:v2';
 const defaults={coins:20,koi:{kohaku:{owned:4,shown:4},tancho:{owned:2,shown:2}},extras:['blooms'],extrasOff:[],pondCoins:[]};
-const SOUND_LIST=[['music','Music'],['wind','Wind'],['birds','Birds'],['chimes','Chimes'],['crickets','Crickets'],['frogs','Bullfrog'],['stream','Stream'],['rain','Rain'],['splash','Coin splash']];
+const SOUND_LIST=[['music','Music'],['wind','Wind'],['birds','Birds'],['chimes','Chimes'],['crickets','Crickets'],['frogs','Bullfrog'],['stream','Stream'],['rain','Rain'],['splash','Coin bubbles']];
 const defaultSettings={version:1,muted:false,shimmer:true,showUi:true,snd:{music:{on:true,vol:.6},wind:{on:true,vol:.35},birds:{on:true,vol:.3},chimes:{on:false,vol:.35},crickets:{on:false,vol:.3},frogs:{on:false,vol:.4},stream:{on:true,vol:.3},rain:{on:false,vol:.4},splash:{on:true,vol:.6}}};
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY));if(!S){const old=JSON.parse(localStorage.getItem('stillwater:v1')||'null');S=old?{...defaults,coins:old.coins??20,pondCoins:old.pondCoins||[]}:null}}catch(e){S=null}
@@ -671,13 +671,9 @@ let frogBuf=null,frogLoad=null;
 function loadFrogs(){frogLoad=fetch('sounds/frogs.mp3').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(b=>{frogBuf=b}).catch(()=>{frogLoad=null})}
 function coinSplash(x){const sp=S.settings.snd.splash;if(!AC||S.settings.muted||!sp.on||!sp.vol||AC.state!=='running')return;const t=AC.currentTime+.01;
   let out=chans.splash.out;if(AC.createStereoPanner){out=AC.createStereoPanner();out.pan.value=clamp((x/W)*2-1,-1,1)*.6;out.connect(chans.splash.out);setTimeout(()=>out.disconnect(),1500)}
-  // Splash = bright noise that darkens as it fades, a low thump, then a few rising bubble chirps; a lone noise burst sounds like paper.
-  const n=noise(),bp=filt('bandpass',1800,.5),lp=filt('lowpass',6000),g=AC.createGain();lp.frequency.setValueAtTime(6000,t);lp.frequency.exponentialRampToValueAtTime(900,t+.45);
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.2,t+.004);g.gain.exponentialRampToValueAtTime(.05,t+.12);g.gain.exponentialRampToValueAtTime(.0001,t+.6);
-  const n2=noise(),lo=filt('lowpass',500),g2=AC.createGain();g2.gain.setValueAtTime(0,t);g2.gain.linearRampToValueAtTime(.16,t+.006);g2.gain.exponentialRampToValueAtTime(.0001,t+.22);
-  n.connect(bp).connect(lp).connect(g).connect(out);n2.connect(lo).connect(g2).connect(out);n.stop(t+.62);n2.stop(t+.25);
-  n.onended=()=>{n.disconnect();bp.disconnect();lp.disconnect();g.disconnect()};n2.onended=()=>{n2.disconnect();lo.disconnect();g2.disconnect()};
-  const send=.3*sp.vol;for(let i=0,m=5+Math.floor(Math.random()*4);i<m;i++){const f=rnd(650,1800);tone(out,{f,f2:f*rnd(1.4,1.9),t:t+rnd(.04,.38),dur:rnd(.03,.07),peak:rnd(.04,.09),attack:.003,send})}}
+  // Each bubble is a short rising sine chirp; a burst of them that thins out and drifts higher reads as bubbles rising.
+  const send=.25*sp.vol;let at=t;for(let i=0,m=9+Math.floor(Math.random()*5);i<m;i++){const k=i/m,f=rnd(380,700)*(1+k*1.2);
+    tone(out,{f,f2:f*rnd(1.5,2),t:at,dur:rnd(.05,.1),peak:rnd(.08,.14)*(1-k*.6),attack:.004,send});at+=rnd(.025,.07)*(1+k*2)}}
 const PENTA=[62,64,66,69,71,74,76,78,81,83].map(hz);
 const GEN={
   music:{base:.55,init(c){c.idx=4;c.chord=0;c.nextChord=0;c.pad=filt('lowpass',900);const pg=AC.createGain();pg.gain.value=.5;c.pad.connect(pg).connect(c.out);const sg=AC.createGain();sg.gain.value=.5;pg.connect(sg).connect(verb)},
@@ -704,7 +700,7 @@ const GEN={
       const [off,len]=[[2.95,.8],[7.55,.45]][Math.random()<.5?0:1],s=AC.createBufferSource(),g=AC.createGain(),at=t+.05;s.buffer=frogBuf;s.playbackRate.value=rnd(.94,1.06);const d=len/s.playbackRate.value;
       g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(1,at+.04);g.gain.setValueAtTime(1,at+d-.15);g.gain.linearRampToValueAtTime(0,at+d);
       const p=panned(c.out);s.connect(g).connect(p);s.onended=()=>{s.disconnect();g.disconnect();if(p!==c.out)p.disconnect()};s.start(at,off,len);c.next=at+10}},
-  // Coin splash is triggered by landCoin; this channel only carries its volume.
+  // Coin bubbles are triggered by landCoin; this channel only carries its volume.
   splash:{base:1.75,init(){},tick(){}},
   birds:{base:.35,init(c){c.next=1},
     tick(c,t){if(t>=c.next){const p=panned(c.out),n=2+Math.floor(Math.random()*5),f0=rnd(2300,3600),shape=Math.random();let at=t+.05;
