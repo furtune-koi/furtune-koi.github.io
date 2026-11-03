@@ -2906,24 +2906,32 @@ body[data-not-sent] > #vis-container ~ #not-sent {
     </defs>
   </svg><div id="vis-container"><style>
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-#stage{position:relative;--s:clamp(34px,10.5vw,46px);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-#g{width:100%;height:auto;display:block;image-rendering:pixelated;border:0.5px solid var(--border-strong);border-radius:var(--radius);outline:none;touch-action:none}
-.ov{position:absolute;bottom:8px;display:flex;gap:6px;touch-action:none}
-.ov.dp{left:8px}
-.ov.ac{right:8px}
-.ov button,.gear{width:var(--s);height:var(--s);padding:0;border-radius:12px;border:1.5px solid rgba(232,240,255,.6);background:rgba(232,240,255,.14);color:#e8f0ff;font-size:calc(var(--s)*.42);font-weight:500;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:center}
-.ov button.w{width:calc(var(--s)*1.5);font-size:calc(var(--s)*.3)}
-.ov button.on{background:rgba(232,240,255,.75);color:#0b1030}
-.gear{position:absolute;top:13%;right:8px;width:calc(var(--s)*.85);height:calc(var(--s)*.85);font-size:calc(var(--s)*.5)}
-.panel{position:absolute;inset:0;z-index:5;background:rgba(7,11,30,.86);display:flex;align-items:center;justify-content:center;border-radius:var(--radius)}
+html,body{margin:0;padding:0;height:100%;height:100dvh;background:#070b1e;overflow:hidden;overscroll-behavior:none}
+html body{padding:0;background:#070b1e;position:fixed;inset:0;width:100%}
+html body #vis-container{overflow:hidden;position:fixed;inset:0;margin:0;padding:0}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;--s:clamp(44px,13vh,56px);--sl:max(10px,env(safe-area-inset-left));--sr:max(10px,env(safe-area-inset-right));--sb:max(10px,env(safe-area-inset-bottom));--st:max(10px,env(safe-area-inset-top));touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#g{width:min(100vw,175vh);height:auto;aspect-ratio:7/4;display:block;image-rendering:pixelated;border:0.5px solid var(--border-strong);border-radius:var(--radius);outline:none;touch-action:none}
+@media(pointer:coarse){#g{border:0;border-radius:0}}
+.ov{position:absolute;bottom:var(--sb);z-index:2;display:flex;gap:6px;touch-action:none}
+.ov.dp{left:var(--sl)}
+.ov.ac{right:var(--sr)}
+#vis-container #stage .ov button,#vis-container #stage .gear{width:var(--s);height:var(--s);padding:0;border-radius:12px;border:1.5px solid rgba(232,240,255,.6);background:rgba(232,240,255,.14);color:#e8f0ff;font-size:calc(var(--s)*.42);font-weight:500;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:center}
+#vis-container #stage .ov button.w{width:calc(var(--s)*1.5);font-size:calc(var(--s)*.3)}
+#vis-container #stage .ov button.on{background:rgba(232,240,255,.75);color:#0b1030}
+#vis-container #stage .gear{position:absolute;z-index:2;top:var(--st);right:var(--sr);width:calc(var(--s)*.85);height:calc(var(--s)*.85);font-size:calc(var(--s)*.5)}
+.panel{position:absolute;inset:0;z-index:5;background:rgba(7,11,30,.86);display:flex;align-items:center;justify-content:center;}
 .panel[hidden]{display:none}
+.rot{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#070b1e;color:#e8f0ff;font-size:18px;text-align:center;padding:24px}
+.rot i{font-size:84px;animation:rt 2.4s ease-in-out infinite}
+@keyframes rt{0%,15%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media(orientation:portrait) and (pointer:coarse){.rot{display:flex}}
 .box{width:min(280px,88%);color:#e8f0ff;font-size:14px;display:flex;flex-direction:column;gap:6px}
 .ph{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:500}
 .pr{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:3px 0;border-bottom:0.5px solid rgba(232,240,255,.25)}
-.box button{height:34px;min-width:60px;padding:0 14px;font-size:13px;border-radius:8px;border:1px solid rgba(232,240,255,.6);background:transparent;color:#e8f0ff}
-.box button.tg[aria-pressed="true"]{background:#e8f0ff;color:#0b1030}
-.box button.x{min-width:34px;padding:0;font-size:16px}
-.box button.rs{margin-top:4px;background:#e8f0ff;color:#0b1030;height:38px;font-size:14px}
+#vis-container #stage .box button{height:34px;min-width:60px;padding:0 14px;font-size:13px;border-radius:8px;border:1px solid rgba(232,240,255,.6);background:transparent;color:#e8f0ff}
+#vis-container #stage .box button.tg[aria-pressed="true"]{background:#e8f0ff;color:#0b1030}
+#vis-container #stage .box button.x{min-width:34px;padding:0;font-size:16px}
+#vis-container #stage .box button.rs{margin-top:4px;background:#e8f0ff;color:#0b1030;height:38px;font-size:14px}
 </style>
 <h2 class="sr-only">Space Impact style shooter set in outer space, with sound effects, on-screen touch controls, and a settings menu</h2>
 <div id="stage">
@@ -2939,6 +2947,7 @@ body[data-not-sent] > #vis-container ~ #not-sent {
 <button class="w" data-k="m">Missile</button>
 <button class="w" data-k="f">Fire</button>
 </div>
+<div class="rot" id="rot"><i class="ti ti-device-mobile-rotated" aria-hidden="true"></i><div>Turn your phone sideways to play</div></div>
 <div class="panel" id="panel" hidden="">
 <div class="box">
 <div class="ph"><span>Settings</span><button class="x" id="pc" aria-label="Close settings"><i class="ti ti-x" aria-hidden="true"></i></button></div>
@@ -3274,6 +3283,12 @@ sync();
 let last=0,acc=0;
 function loop(ts){acc+=Math.min(100,ts-last);last=ts;while(acc>=16.67){step();acc-=16.67}draw();requestAnimationFrame(loop)}
 requestAnimationFrame(ts=>{last=ts;loop(ts)});
+{const mq=matchMedia('(orientation: portrait) and (pointer: coarse)');let rp=false;
+const chk=()=>{if(mq.matches){if(st==='play'&&!paused){paused=true;rp=true}}else if(rp){rp=false;if(st==='play'&&!menuOpen)paused=false}};
+mq.addEventListener?mq.addEventListener('change',chk):mq.addListener(chk);addEventListener('resize',chk);setInterval(chk,250);chk();
+let lk=false;const lock=()=>{if(lk)return;lk=true;try{screen.orientation.lock('landscape').catch(()=>{})}catch(e){}};
+if(matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches)lock();
+addEventListener('pointerdown',lock,{once:true,passive:true})}
 </script></div>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(()=>{}))</script>
 </body></html>
