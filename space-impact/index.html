@@ -2913,9 +2913,12 @@ html body #vis-container{overflow:hidden;position:fixed;inset:0;margin:0;padding
 #g{width:min(100vw,175vh);height:auto;aspect-ratio:7/4;display:block;image-rendering:pixelated;border:0.5px solid var(--border-strong);border-radius:var(--radius);outline:none;touch-action:none}
 @media(pointer:coarse){#g{border:0;border-radius:0}}
 .ov{position:absolute;bottom:var(--sb);z-index:2;display:flex;gap:6px;touch-action:none}
-.ov.dp{left:var(--sl)}
 .ov.ac{right:var(--sr)}
 #vis-container #stage .ov button,#vis-container #stage .gear{width:var(--s);height:var(--s);padding:0;border-radius:12px;border:1.5px solid rgba(232,240,255,.6);background:rgba(232,240,255,.14);color:#e8f0ff;font-size:calc(var(--s)*.42);font-weight:500;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:center}
+#vis-container #stage .joy{display:none;position:absolute;left:var(--sl);bottom:var(--sb);width:calc(var(--s)*2.6);height:calc(var(--s)*2.6);z-index:2;border-radius:50%;border:1.5px solid rgba(232,240,255,.6);background:rgba(232,240,255,.14);opacity:.55;touch-action:none;pointer-events:none}
+#vis-container #stage .joy.on{opacity:1}
+#vis-container #stage .joy i{position:absolute;inset:0;margin:auto;width:var(--s);height:var(--s);border-radius:50%;background:rgba(232,240,255,.5);border:1.5px solid rgba(232,240,255,.85)}
+@media(hover:none),(pointer:coarse),(any-pointer:coarse){#vis-container #stage .joy{display:block}}
 #vis-container #stage .ov button.w{width:calc(var(--s)*1.5);font-size:calc(var(--s)*.3)}
 #vis-container #stage .ov button.on{background:rgba(232,240,255,.75);color:#0b1030}
 #vis-container #stage .gear{position:absolute;z-index:2;top:var(--st);right:var(--sr);width:calc(var(--s)*.85);height:calc(var(--s)*.85);font-size:calc(var(--s)*.5)}
@@ -2937,12 +2940,7 @@ html body #vis-container{overflow:hidden;position:fixed;inset:0;margin:0;padding
 <div id="stage">
 <canvas id="g" width="672" height="384" tabindex="0"></canvas>
 <button class="gear" id="gear" aria-label="Settings"><i class="ti ti-settings" aria-hidden="true"></i></button>
-<div class="ov dp">
-<button data-k="l" aria-label="Move left"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
-<button data-k="u" aria-label="Move up"><i class="ti ti-arrow-up" aria-hidden="true"></i></button>
-<button data-k="d" aria-label="Move down"><i class="ti ti-arrow-down" aria-hidden="true"></i></button>
-<button data-k="r" aria-label="Move right"><i class="ti ti-arrow-right" aria-hidden="true"></i></button>
-</div>
+<div class="joy" id="joy"><i></i></div>
 <div class="ov ac">
 <button class="w" data-k="m">Missile</button>
 <button class="w" data-k="f">Fire</button>
@@ -3013,7 +3011,7 @@ pm:["#####","#.#.#","#.#.#","#...#","#####"],
 heart:[".#.#.","#####","#####",".###.","..#.."]
 };
 const EC=['#ff6b6b','#b197fc','#ffa94d'];
-const keys={};
+const keys={},jv={x:0,y:0};let jid=null;
 const map={ArrowUp:'u',KeyW:'u',ArrowDown:'d',KeyS:'d',ArrowLeft:'l',KeyA:'l',ArrowRight:'r',KeyD:'r',Space:'f',KeyZ:'f',KeyX:'m',KeyM:'m'};
 let st='title',paused=false,t=0,best=0,overAt=0,bannerT=0,lastM=0,drag=null,menuOpen=false,menuPaused=false;
 let P={x:8,y:50,w:9,h:7},bul=[],en=[],eb=[],pu=[],fx=[],score=0,lives=3,missiles=3,level=1,kills=0,boss=null,spawnT=50,inv=0,fireT=0;
@@ -3081,14 +3079,17 @@ t++;
 if(!paused)bgStep();
 for(const f of fx)f.t++;
 fx=fx.filter(f=>f.t<18);
+if(paused&&jid!=null)joyRel();
 if(st!=='play'||paused)return;
 if(bannerT>0)bannerT--;
 if(boss&&boss.f>0)boss.f--;
+if(keys.u||keys.d||keys.l||keys.r){
 const sp=1.4;
 if(keys.u)P.y-=sp;
 if(keys.d)P.y+=sp;
 if(keys.l)P.x-=sp;
 if(keys.r)P.x+=sp;
+}else{P.x+=jv.x*1.6;P.y+=jv.y*1.6}
 P.x=Math.max(0,Math.min(W-P.w,P.x));
 P.y=Math.max(HUD+1,Math.min(H-P.h-1,P.y));
 if(fireT>0)fireT--;
@@ -3185,12 +3186,13 @@ else if(e.code==='KeyP'||e.code==='Escape'){if(menuOpen)closeMenu();else if(st==
 else if(e.code==='Enter'){e.preventDefault();if(st!=='play')startGame()}
 });
 addEventListener('keyup',e=>{const k=map[e.code];if(k)keys[k]=false});
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&st==='play'&&!menuOpen)paused=true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){joyRel();if(st==='play'&&!menuOpen)paused=true}});
 const pt=e=>e.touches?(e.touches[0]||e.changedTouches[0]):e;
+const inZone=(e,p)=>e.type!=='mousedown'&&e.pointerType!=='mouse'&&p.clientX<innerWidth*.45;
 function dragStart(e){
 if(menuOpen)return;
 const p=pt(e);
-if(!p)return;
+if(!p||inZone(e,p))return;
 if(st!=='play')startGame();else if(paused)paused=false;
 drag={sx:p.clientX,sy:p.clientY,px:P.x,py:P.y};
 }
@@ -3241,12 +3243,45 @@ b.addEventListener('click',()=>{
 if(performance.now()-(b._t||0)<500)return;
 if(st!=='play'){if(k==='f')startGame();return}
 if(k==='m')missile();
-if(k==='u')P.y-=8;
-if(k==='d')P.y+=8;
-if(k==='l')P.x-=8;
-if(k==='r')P.x+=8;
 });
 });
+const joy=document.getElementById('joy'),knob=joy.firstChild,stage=document.getElementById('stage');
+let jx=0,jy=0,jR=1,ox=0,oy=0;
+function joyRel(){
+if(jid!=null){try{stage.releasePointerCapture(jid)}catch(e){}}
+jid=null;jv.x=jv.y=0;
+joy.classList.remove('on');
+joy.style.left=joy.style.top=joy.style.bottom='';
+knob.style.transform='';
+}
+// Steer from where the thumb landed; the base may be clamped away from the screen edge.
+function joyMove(p){
+let dx=p.clientX-ox,dy=p.clientY-oy;
+const len=Math.hypot(dx,dy)||1,c=Math.min(len,jR);
+dx*=c/len;dy*=c/len;
+let kx=p.clientX-jx,ky=p.clientY-jy;const kl=Math.hypot(kx,ky)||1,kc=Math.min(kl,jR);
+knob.style.transform=`translate(${kx*kc/kl}px,${ky*kc/kl}px)`;
+const m=Math.max(0,c/jR-.12)/.88;
+jv.x=dx/c*m||0;jv.y=dy/c*m||0;
+}
+stage.addEventListener('pointerdown',e=>{
+if(menuOpen||jid!=null||e.pointerType==='mouse'||e.target.closest('.ac,.gear,.panel,.rot'))return;
+const r=stage.getBoundingClientRect();
+if(e.clientX-r.left>r.width*.45)return;
+if(st!=='play')startGame();else if(paused)paused=false;
+const D=joy.offsetWidth;
+jR=(D-knob.offsetWidth)/2;
+jx=Math.max(D/2,Math.min(r.width-D/2,e.clientX-r.left))+r.left;
+jy=Math.max(D/2,Math.min(r.height-D/2,e.clientY-r.top))+r.top;
+joy.style.left=jx-r.left-D/2+'px';joy.style.top=jy-r.top-D/2+'px';joy.style.bottom='auto';
+ox=e.clientX;oy=e.clientY;
+joy.classList.add('on');
+jid=e.pointerId;
+try{stage.setPointerCapture(jid)}catch(x){}
+joyMove(e);
+});
+stage.addEventListener('pointermove',e=>{if(e.pointerId===jid)joyMove(e)});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>stage.addEventListener(n,e=>{if(e.pointerId===jid)joyRel()}));
 let gT=0;
 function tap(el,fn){
 const run=e=>{if(e&&e.cancelable)e.preventDefault();const n=performance.now();if(n-gT<350)return;gT=n;fn()};
@@ -3264,7 +3299,7 @@ menuOpen=true;
 menuPaused=st==='play'&&!paused;
 if(menuPaused)paused=true;
 for(const k in keys)keys[k]=false;
-drag=null;
+drag=null;joyRel();
 panel.hidden=false;
 }
 function closeMenu(){
@@ -3284,7 +3319,7 @@ let last=0,acc=0;
 function loop(ts){acc+=Math.min(100,ts-last);last=ts;while(acc>=16.67){step();acc-=16.67}draw();requestAnimationFrame(loop)}
 requestAnimationFrame(ts=>{last=ts;loop(ts)});
 {const mq=matchMedia('(orientation: portrait) and (pointer: coarse)');let rp=false;
-const chk=()=>{if(mq.matches){if(st==='play'&&!paused){paused=true;rp=true}}else if(rp){rp=false;if(st==='play'&&!menuOpen)paused=false}};
+const chk=()=>{if(mq.matches){joyRel();if(st==='play'&&!paused){paused=true;rp=true}}else if(rp){rp=false;if(st==='play'&&!menuOpen)paused=false}};
 mq.addEventListener?mq.addEventListener('change',chk):mq.addListener(chk);addEventListener('resize',chk);setInterval(chk,250);chk();
 let lk=false;const lock=()=>{if(lk)return;lk=true;try{screen.orientation.lock('landscape').catch(()=>{})}catch(e){}};
 if(matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches)lock();
